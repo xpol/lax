@@ -26,12 +26,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "event2/event-config.h"
-#include "evconfig-private.h"
-
 #include <sys/types.h>
 
-#ifdef EVENT__HAVE_SYS_TIME_H
+#include "event2/event-config.h"
+
+#ifdef _EVENT_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
@@ -39,25 +38,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef EVENT__HAVE_STDARG_H
+#ifdef _EVENT_HAVE_STDARG_H
 #include <stdarg.h>
 #endif
-#ifdef EVENT__HAVE_UNISTD_H
+#ifdef _EVENT_HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
 
-#ifdef EVENT__HAVE_SYS_SOCKET_H
+#ifdef _EVENT_HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef EVENT__HAVE_NETINET_IN_H
+#ifdef _EVENT_HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef EVENT__HAVE_NETINET_IN6_H
+#ifdef _EVENT_HAVE_NETINET_IN6_H
 #include <netinet/in6.h>
 #endif
 
@@ -71,7 +70,7 @@
 #include "mm-internal.h"
 #include "bufferevent-internal.h"
 #include "util-internal.h"
-#ifdef _WIN32
+#ifdef WIN32
 #include "iocp-internal.h"
 #endif
 
@@ -97,7 +96,7 @@ const struct bufferevent_ops bufferevent_ops_socket = {
 };
 
 #define be_socket_add(ev, t)			\
-	bufferevent_add_event_((ev), (t))
+	_bufferevent_add_event((ev), (t))
 
 static void
 bufferevent_socket_outbuf_cb(struct evbuffer *buf,
@@ -131,7 +130,7 @@ bufferevent_readcb(evutil_socket_t fd, short event, void *arg)
 	short what = BEV_EVENT_READING;
 	ev_ssize_t howmuch = -1, readmax=-1;
 
-	bufferevent_incref_and_lock_(bufev);
+	_bufferevent_incref_and_lock(bufev);
 
 	if (event == EV_TIMEOUT) {
 		/* Note that we only check for event==EV_TIMEOUT. If
@@ -155,7 +154,7 @@ bufferevent_readcb(evutil_socket_t fd, short event, void *arg)
 			goto done;
 		}
 	}
-	readmax = bufferevent_get_read_max_(bufev_p);
+	readmax = _bufferevent_get_read_max(bufev_p);
 	if (howmuch < 0 || howmuch > readmax) /* The use of -1 for "unlimited"
 					       * uglifies this code. XXXX */
 		howmuch = readmax;
@@ -180,11 +179,11 @@ bufferevent_readcb(evutil_socket_t fd, short event, void *arg)
 	if (res <= 0)
 		goto error;
 
-	bufferevent_decrement_read_buckets_(bufev_p, res);
+	_bufferevent_decrement_read_buckets(bufev_p, res);
 
 	/* Invoke the user callback - must always be called last */
 	if (evbuffer_get_length(input) >= bufev->wm_read.low)
-		bufferevent_run_readcb_(bufev);
+		_bufferevent_run_readcb(bufev);
 
 	goto done;
 
@@ -193,10 +192,10 @@ bufferevent_readcb(evutil_socket_t fd, short event, void *arg)
 
  error:
 	bufferevent_disable(bufev, EV_READ);
-	bufferevent_run_eventcb_(bufev, what);
+	_bufferevent_run_eventcb(bufev, what);
 
  done:
-	bufferevent_decref_and_unlock_(bufev);
+	_bufferevent_decref_and_unlock(bufev);
 }
 
 static void
@@ -210,7 +209,7 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 	int connected = 0;
 	ev_ssize_t atmost = -1;
 
-	bufferevent_incref_and_lock_(bufev);
+	_bufferevent_incref_and_lock(bufev);
 
 	if (event == EV_TIMEOUT) {
 		/* Note that we only check for event==EV_TIMEOUT. If
@@ -220,7 +219,7 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 		goto error;
 	}
 	if (bufev_p->connecting) {
-		int c = evutil_socket_finished_connecting_(fd);
+		int c = evutil_socket_finished_connecting(fd);
 		/* we need to fake the error if the connection was refused
 		 * immediately - usually connection to localhost on BSD */
 		if (bufev_p->connection_refused) {
@@ -235,20 +234,20 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 		if (c < 0) {
 			event_del(&bufev->ev_write);
 			event_del(&bufev->ev_read);
-			bufferevent_run_eventcb_(bufev, BEV_EVENT_ERROR);
+			_bufferevent_run_eventcb(bufev, BEV_EVENT_ERROR);
 			goto done;
 		} else {
 			connected = 1;
-#ifdef _WIN32
+#ifdef WIN32
 			if (BEV_IS_ASYNC(bufev)) {
 				event_del(&bufev->ev_write);
-				bufferevent_async_set_connected_(bufev);
-				bufferevent_run_eventcb_(bufev,
+				bufferevent_async_set_connected(bufev);
+				_bufferevent_run_eventcb(bufev,
 						BEV_EVENT_CONNECTED);
 				goto done;
 			}
 #endif
-			bufferevent_run_eventcb_(bufev,
+			_bufferevent_run_eventcb(bufev,
 					BEV_EVENT_CONNECTED);
 			if (!(bufev->enabled & EV_WRITE) ||
 			    bufev_p->write_suspended) {
@@ -258,7 +257,7 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 		}
 	}
 
-	atmost = bufferevent_get_write_max_(bufev_p);
+	atmost = _bufferevent_get_write_max(bufev_p);
 
 	if (bufev_p->write_suspended)
 		goto done;
@@ -282,7 +281,7 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 		if (res <= 0)
 			goto error;
 
-		bufferevent_decrement_write_buckets_(bufev_p, res);
+		_bufferevent_decrement_write_buckets(bufev_p, res);
 	}
 
 	if (evbuffer_get_length(bufev->output) == 0) {
@@ -295,7 +294,7 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 	 */
 	if ((res || !connected) &&
 	    evbuffer_get_length(bufev->output) <= bufev->wm_write.low) {
-		bufferevent_run_writecb_(bufev);
+		_bufferevent_run_writecb(bufev);
 	}
 
 	goto done;
@@ -308,10 +307,10 @@ bufferevent_writecb(evutil_socket_t fd, short event, void *arg)
 
  error:
 	bufferevent_disable(bufev, EV_WRITE);
-	bufferevent_run_eventcb_(bufev, what);
+	_bufferevent_run_eventcb(bufev, what);
 
  done:
-	bufferevent_decref_and_unlock_(bufev);
+	_bufferevent_decref_and_unlock(bufev);
 }
 
 struct bufferevent *
@@ -321,15 +320,15 @@ bufferevent_socket_new(struct event_base *base, evutil_socket_t fd,
 	struct bufferevent_private *bufev_p;
 	struct bufferevent *bufev;
 
-#ifdef _WIN32
-	if (base && event_base_get_iocp_(base))
-		return bufferevent_async_new_(base, fd, options);
+#ifdef WIN32
+	if (base && event_base_get_iocp(base))
+		return bufferevent_async_new(base, fd, options);
 #endif
 
 	if ((bufev_p = mm_calloc(1, sizeof(struct bufferevent_private)))== NULL)
 		return NULL;
 
-	if (bufferevent_init_common_(bufev_p, base, &bufferevent_ops_socket,
+	if (bufferevent_init_common(bufev_p, base, &bufferevent_ops_socket,
 				    options) < 0) {
 		mm_free(bufev_p);
 		return NULL;
@@ -362,7 +361,7 @@ bufferevent_socket_connect(struct bufferevent *bev,
 	int result=-1;
 	int ownfd = 0;
 
-	bufferevent_incref_and_lock_(bev);
+	_bufferevent_incref_and_lock(bev);
 
 	if (!bufev_p)
 		goto done;
@@ -371,17 +370,18 @@ bufferevent_socket_connect(struct bufferevent *bev,
 	if (fd < 0) {
 		if (!sa)
 			goto done;
-		fd = evutil_socket_(sa->sa_family,
-		    SOCK_STREAM|EVUTIL_SOCK_NONBLOCK, 0);
+		fd = socket(sa->sa_family, SOCK_STREAM, 0);
 		if (fd < 0)
+			goto done;
+		if (evutil_make_socket_nonblocking(fd)<0)
 			goto done;
 		ownfd = 1;
 	}
 	if (sa) {
-#ifdef _WIN32
-		if (bufferevent_async_can_connect_(bev)) {
+#ifdef WIN32
+		if (bufferevent_async_can_connect(bev)) {
 			bufferevent_setfd(bev, fd);
-			r = bufferevent_async_connect_(bev, fd, sa, socklen);
+			r = bufferevent_async_connect(bev, fd, sa, socklen);
 			if (r < 0)
 				goto freesock;
 			bufev_p->connecting = 1;
@@ -389,11 +389,11 @@ bufferevent_socket_connect(struct bufferevent *bev,
 			goto done;
 		} else
 #endif
-		r = evutil_socket_connect_(&fd, sa, socklen);
+		r = evutil_socket_connect(&fd, sa, socklen);
 		if (r < 0)
 			goto freesock;
 	}
-#ifdef _WIN32
+#ifdef WIN32
 	/* ConnectEx() isn't always around, even when IOCP is enabled.
 	 * Here, we borrow the socket object's write handler to fall back
 	 * on a non-blocking connect() when ConnectEx() is unavailable. */
@@ -425,12 +425,12 @@ bufferevent_socket_connect(struct bufferevent *bev,
 	goto done;
 
 freesock:
-	bufferevent_run_eventcb_(bev, BEV_EVENT_ERROR);
+	_bufferevent_run_eventcb(bev, BEV_EVENT_ERROR);
 	if (ownfd)
 		evutil_closesocket(fd);
 	/* do something about the error? */
 done:
-	bufferevent_decref_and_unlock_(bev);
+	_bufferevent_decref_and_unlock(bev);
 	return result;
 }
 
@@ -444,13 +444,13 @@ bufferevent_connect_getaddrinfo_cb(int result, struct evutil_addrinfo *ai,
 	int r;
 	BEV_LOCK(bev);
 
-	bufferevent_unsuspend_write_(bev, BEV_SUSPEND_LOOKUP);
-	bufferevent_unsuspend_read_(bev, BEV_SUSPEND_LOOKUP);
+	bufferevent_unsuspend_write(bev, BEV_SUSPEND_LOOKUP);
+	bufferevent_unsuspend_read(bev, BEV_SUSPEND_LOOKUP);
 
 	if (result != 0) {
 		bev_p->dns_error = result;
-		bufferevent_run_eventcb_(bev, BEV_EVENT_ERROR);
-		bufferevent_decref_and_unlock_(bev);
+		_bufferevent_run_eventcb(bev, BEV_EVENT_ERROR);
+		_bufferevent_decref_and_unlock(bev);
 		if (ai)
 			evutil_freeaddrinfo(ai);
 		return;
@@ -460,7 +460,7 @@ bufferevent_connect_getaddrinfo_cb(int result, struct evutil_addrinfo *ai,
 	/* XXX use this return value */
 	r = bufferevent_socket_connect(bev, ai->ai_addr, (int)ai->ai_addrlen);
 	(void)r;
-	bufferevent_decref_and_unlock_(bev);
+	_bufferevent_decref_and_unlock(bev);
 	evutil_freeaddrinfo(ai);
 }
 
@@ -490,19 +490,18 @@ bufferevent_socket_connect_hostname(struct bufferevent *bev,
 	hint.ai_protocol = IPPROTO_TCP;
 	hint.ai_socktype = SOCK_STREAM;
 
-	bufferevent_suspend_write_(bev, BEV_SUSPEND_LOOKUP);
-	bufferevent_suspend_read_(bev, BEV_SUSPEND_LOOKUP);
+	bufferevent_suspend_write(bev, BEV_SUSPEND_LOOKUP);
+	bufferevent_suspend_read(bev, BEV_SUSPEND_LOOKUP);
 
-	bufferevent_incref_(bev);
-	err = evutil_getaddrinfo_async_(evdns_base, hostname, portbuf,
+	bufferevent_incref(bev);
+	err = evutil_getaddrinfo_async(evdns_base, hostname, portbuf,
 	    &hint, bufferevent_connect_getaddrinfo_cb, bev);
 
 	if (err == 0) {
 		return 0;
 	} else {
-		bufferevent_unsuspend_write_(bev, BEV_SUSPEND_LOOKUP);
-		bufferevent_unsuspend_read_(bev, BEV_SUSPEND_LOOKUP);
-		bufferevent_decref_(bev);
+		bufferevent_unsuspend_write(bev, BEV_SUSPEND_LOOKUP);
+		bufferevent_unsuspend_read(bev, BEV_SUSPEND_LOOKUP);
 		return -1;
 	}
 }
@@ -516,7 +515,7 @@ bufferevent_socket_get_dns_error(struct bufferevent *bev)
 
 	BEV_LOCK(bev);
 	rv = bev_p->dns_error;
-	BEV_LOCK(bev);
+	BEV_UNLOCK(bev);
 
 	return rv;
 }
@@ -643,8 +642,6 @@ int
 bufferevent_priority_set(struct bufferevent *bufev, int priority)
 {
 	int r = -1;
-	struct bufferevent_private *bufev_p =
-	    EVUTIL_UPCAST(bufev, struct bufferevent_private, bev);
 
 	BEV_LOCK(bufev);
 	if (bufev->be_ops != &bufferevent_ops_socket)
@@ -654,8 +651,6 @@ bufferevent_priority_set(struct bufferevent *bufev, int priority)
 		goto done;
 	if (event_priority_set(&bufev->ev_write, priority) == -1)
 		goto done;
-
-	event_deferred_cb_set_priority_(&bufev_p->deferred, priority);
 
 	r = 0;
 done:

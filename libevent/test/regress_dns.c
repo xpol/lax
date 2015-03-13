@@ -24,9 +24,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "../util-internal.h"
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -36,18 +35,18 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef EVENT__HAVE_SYS_TIME_H
+#ifdef _EVENT_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <sys/queue.h>
-#ifndef _WIN32
+#ifndef WIN32
 #include <sys/socket.h>
 #include <signal.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #endif
-#ifdef EVENT__HAVE_NETINET_IN6_H
+#ifdef _EVENT_HAVE_NETINET_IN6_H
 #include <netinet/in6.h>
 #endif
 #ifdef HAVE_NETDB_H
@@ -71,6 +70,8 @@
 #include "log-internal.h"
 #include "regress.h"
 #include "regress_testutils.h"
+
+#include "../util-internal.h"
 
 static int dns_ok = 0;
 static int dns_got_cancel = 0;
@@ -98,7 +99,7 @@ dns_gethostbyname_cb(int result, char type, int count, int ttl,
 
 	switch (type) {
 	case DNS_IPv6_AAAA: {
-#if defined(EVENT__HAVE_STRUCT_IN6_ADDR) && defined(EVENT__HAVE_INET_NTOP) && defined(INET6_ADDRSTRLEN)
+#if defined(_EVENT_HAVE_STRUCT_IN6_ADDR) && defined(_EVENT_HAVE_INET_NTOP) && defined(INET6_ADDRSTRLEN)
 		struct in6_addr *in6_addrs = addresses;
 		char buf[INET6_ADDRSTRLEN+1];
 		int i;
@@ -106,7 +107,7 @@ dns_gethostbyname_cb(int result, char type, int count, int ttl,
 		if (ttl < 0)
 			goto out;
 		for (i = 0; i < count; ++i) {
-			const char *b = inet_ntop(AF_INET6, &in6_addrs[i], buf,sizeof(buf));
+			const char *b = evutil_inet_ntop(AF_INET6, &in6_addrs[i], buf,sizeof(buf));
 			if (b)
 				TT_BLATHER(("%s ", b));
 			else
@@ -319,12 +320,12 @@ dns_server_gethostbyname_cb(int result, char type, int count, int ttl,
 		break;
 	}
 	case DNS_IPv6_AAAA: {
-#if defined (EVENT__HAVE_STRUCT_IN6_ADDR) && defined(EVENT__HAVE_INET_NTOP) && defined(INET6_ADDRSTRLEN)
+#if defined (_EVENT_HAVE_STRUCT_IN6_ADDR) && defined(_EVENT_HAVE_INET_NTOP) && defined(INET6_ADDRSTRLEN)
 		struct in6_addr *in6_addrs = addresses;
 		char buf[INET6_ADDRSTRLEN+1];
 		if (memcmp(&in6_addrs[0].s6_addr, "abcdefghijklmnop", 16)
 		    || ttl != 123) {
-			const char *b = inet_ntop(AF_INET6, &in6_addrs[0],buf,sizeof(buf));
+			const char *b = evutil_inet_ntop(AF_INET6, &in6_addrs[0],buf,sizeof(buf));
 			printf("Bad IPv6 response \"%s\" %d. ", b, ttl);
 			dns_ok = 0;
 			goto out;
@@ -683,9 +684,9 @@ dns_retry_test(void *arg)
 
 	dns = evdns_base_new(base, 0);
 	tt_assert(!evdns_base_nameserver_ip_add(dns, buf));
-	tt_assert(! evdns_base_set_option(dns, "timeout", "0.2"));
+	tt_assert(! evdns_base_set_option(dns, "timeout", "0.3"));
 	tt_assert(! evdns_base_set_option(dns, "max-timeouts:", "10"));
-	tt_assert(! evdns_base_set_option(dns, "initial-probe-timeout", "0.1"));
+	tt_assert(! evdns_base_set_option(dns, "initial-probe-timeout", "0.5"));
 
 	evdns_base_resolve_ipv4(dns, "host.example.com", 0,
 	    generic_dns_callback, &r1);
@@ -704,8 +705,8 @@ dns_retry_test(void *arg)
 	/* Now try again, but this time have the server get treated as
 	 * failed, so we can send it a test probe. */
 	drop_count = 4;
-	tt_assert(! evdns_base_set_option(dns, "max-timeouts:", "2"));
-	tt_assert(! evdns_base_set_option(dns, "attempts:", "3"));
+	tt_assert(! evdns_base_set_option(dns, "max-timeouts:", "3"));
+	tt_assert(! evdns_base_set_option(dns, "attempts:", "4"));
 	memset(&r1, 0, sizeof(r1));
 
 	evdns_base_resolve_ipv4(dns, "host.example.com", 0,
@@ -882,8 +883,6 @@ be_getaddrinfo_server_cb(struct evdns_server_request *req, void *data)
 		struct in6_addr ans6;
 		memset(&ans6, 0, sizeof(ans6));
 
-		TT_BLATHER(("Got question about %s, type=%d", qname, qtype));
-
 		if (qtype == EVDNS_TYPE_A &&
 		    qclass == EVDNS_CLASS_INET &&
 		    !evutil_ascii_strcasecmp(qname, "nobodaddy.example.com")) {
@@ -984,13 +983,10 @@ be_getaddrinfo_server_cb(struct evdns_server_request *req, void *data)
 			TT_GRIPE(("Got weird request for %s",qname));
 		}
 	}
-	if (added_any) {
-		TT_BLATHER(("answering"));
+	if (added_any)
 		evdns_server_request_respond(req, 0);
-	} else {
-		TT_BLATHER(("saying nexist."));
+	else
 		evdns_server_request_respond(req, 3);
-	}
 }
 
 /* Implements a listener for connect_hostname test. */
@@ -1221,9 +1217,6 @@ test_getaddrinfo_async(void *arg)
 	memset(a_out, 0, sizeof(a_out));
 	memset(&local_outcome, 0, sizeof(local_outcome));
 
-	tt_assert(! evdns_base_set_option(dns_base, "timeout", "0.3"));
-	tt_assert(! evdns_base_set_option(dns_base, "getaddrinfo-allow-skew", "0.2"));
-
 	n_gai_results_pending = 10000; /* don't think about exiting yet. */
 
 	/* 1. Try some cases that will never hit the asynchronous resolver. */
@@ -1251,7 +1244,7 @@ test_getaddrinfo_async(void *arg)
 	memset(&local_outcome, 0, sizeof(local_outcome));
 	r = evdns_getaddrinfo(dns_base, "www.google.com", "80",
 	    &hints, gai_cb, &local_outcome);
-	tt_int_op(r,==,0);
+	tt_ptr_op(r,==,NULL);
 	tt_int_op(local_outcome.err,==,EVUTIL_EAI_NONAME);
 	tt_ptr_op(local_outcome.ai,==,NULL);
 
@@ -1712,7 +1705,7 @@ testleak_cleanup(const struct testcase_t *testcase, void *env_)
 	int ok = 0;
 	struct testleak_env_t *env = env_;
 	tt_assert(env);
-#ifdef EVENT__DISABLE_DEBUG_MODE
+#ifdef _EVENT_DISABLE_DEBUG_MODE
 	tt_int_op(allocated_chunks, ==, 0);
 #else
 	/* FIXME: that's `1' because of event_debug_map_HT_GROW */
@@ -1834,10 +1827,10 @@ end:
 
 struct testcase_t dns_testcases[] = {
 	DNS_LEGACY(server, TT_FORK|TT_NEED_BASE),
-	DNS_LEGACY(gethostbyname, TT_FORK|TT_NEED_BASE|TT_NEED_DNS|TT_OFF_BY_DEFAULT),
-	DNS_LEGACY(gethostbyname6, TT_FORK|TT_NEED_BASE|TT_NEED_DNS|TT_OFF_BY_DEFAULT),
-	DNS_LEGACY(gethostbyaddr, TT_FORK|TT_NEED_BASE|TT_NEED_DNS|TT_OFF_BY_DEFAULT),
-	{ "resolve_reverse", dns_resolve_reverse, TT_FORK|TT_OFF_BY_DEFAULT, NULL, NULL },
+	DNS_LEGACY(gethostbyname, TT_FORK|TT_NEED_BASE|TT_NEED_DNS),
+	DNS_LEGACY(gethostbyname6, TT_FORK|TT_NEED_BASE|TT_NEED_DNS),
+	DNS_LEGACY(gethostbyaddr, TT_FORK|TT_NEED_BASE|TT_NEED_DNS),
+	{ "resolve_reverse", dns_resolve_reverse, TT_FORK, NULL, NULL },
 	{ "search", dns_search_test, TT_FORK|TT_NEED_BASE, &basic_setup, NULL },
 	{ "search_cancel", dns_search_cancel_test,
 	  TT_FORK|TT_NEED_BASE, &basic_setup, NULL },

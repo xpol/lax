@@ -26,16 +26,15 @@
  */
 
 #include "event2/event-config.h"
-#include "evconfig-private.h"
 
-#ifdef EVENT__HAVE_SYS_TYPES_H
+#ifdef _EVENT_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef EVENT__HAVE_SYS_PARAM_H
+#ifdef _EVENT_HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 
-#ifdef _WIN32
+#ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <windows.h>
@@ -45,7 +44,7 @@
 #endif
 
 #include <sys/queue.h>
-#ifdef EVENT__HAVE_SYS_TIME_H
+#ifdef _EVENT_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
@@ -53,10 +52,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _WIN32
+#ifndef WIN32
 #include <syslog.h>
 #endif
-#ifdef EVENT__HAVE_UNISTD_H
+#ifdef _EVENT_HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <limits.h>
@@ -207,6 +206,8 @@ decode_tag_internal(ev_uint32_t *ptag, struct evbuffer *evbuf, int dodrain)
 	 */
 	data = evbuffer_pullup(
 		evbuf, len < sizeof(number) + 1 ? len : sizeof(number) + 1);
+	if (!data)
+		return (-1);
 
 	while (count++ < len) {
 		ev_uint8_t lower = *data++;
@@ -313,6 +314,8 @@ do {									\
 									\
 	/* XXX(niels): faster? */					\
 	data = evbuffer_pullup(evbuf, offset + 1) + offset;		\
+	if (!data)							\
+		return (-1);						\
 									\
 	nibbles = ((data[0] & 0xf0) >> 4) + 1;				\
 	if (nibbles > maxnibbles || (nibbles >> 1) + 1 > len)		\
@@ -320,6 +323,8 @@ do {									\
 	len = (nibbles >> 1) + 1;					\
 									\
 	data = evbuffer_pullup(evbuf, offset + len) + offset;		\
+	if (!data)							\
+		return (-1);						\
 									\
 	while (nibbles > 0) {						\
 		number <<= 4;						\
