@@ -25,7 +25,6 @@
 
 # Autotools stuff
 .deps
-.dirstamp
 Makefile
 Makefile.in
 
@@ -41,6 +40,8 @@ TAGS
 libevent.pc
 libevent_pthreads.pc
 libevent_openssl.pc
+*.log
+*.trs
 
 ## The initial / makes these files only get ignored in particular directories.
 /autom4te.cache
@@ -68,13 +69,11 @@ libevent_openssl.pc
 /ltmain.sh
 /missing
 /stamp-h1
-/stamp-h2
 
 /include/event2/event-config.h
-/evconfig-private.h
 
 /sample/dns-example
-/sample/event-read-fifo
+/sample/event-test
 /sample/hello-world
 /sample/http-server
 /sample/le-proxy
@@ -89,12 +88,11 @@ libevent_openssl.pc
 /test/regress.gen.c
 /test/regress.gen.h
 /test/rpcgen-attempted
-/test/test-dumpevents
 /test/test-eof
 /test/test-init
 /test/test-ratelim
+/test/test-script.sh
 /test/test-time
 /test/test-weof
 /test/test-changelist
-/test/test-fdleak
 

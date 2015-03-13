@@ -24,9 +24,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "util-internal.h"
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -36,11 +35,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef EVENT__HAVE_SYS_TIME_H
+#ifdef _EVENT_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <sys/queue.h>
-#ifndef _WIN32
+#ifndef WIN32
 #include <sys/socket.h>
 #include <signal.h>
 #include <unistd.h>
@@ -60,6 +59,7 @@
 #include "event2/bufferevent.h"
 #include "event2/util.h"
 #include "log-internal.h"
+#include "util-internal.h"
 #include "http-internal.h"
 #include "regress.h"
 #include "regress_testutils.h"
@@ -154,7 +154,7 @@ http_connect(const char *address, u_short port)
 
 	evutil_make_socket_nonblocking(fd);
 	if (connect(fd, sa, slen) == -1) {
-#ifdef _WIN32
+#ifdef WIN32
 		int tmp_err = WSAGetLastError();
 		if (tmp_err != WSAEINPROGRESS && tmp_err != WSAEINVAL &&
 		    tmp_err != WSAEWOULDBLOCK)
@@ -212,11 +212,11 @@ http_readcb(struct bufferevent *bev, void *arg)
 		enum message_read_status done;
 
 		/* req->kind = EVHTTP_RESPONSE; */
-		done = evhttp_parse_firstline_(req, bufferevent_get_input(bev));
+		done = evhttp_parse_firstline(req, bufferevent_get_input(bev));
 		if (done != ALL_DATA_READ)
 			goto out;
 
-		done = evhttp_parse_headers_(req, bufferevent_get_input(bev));
+		done = evhttp_parse_headers(req, bufferevent_get_input(bev));
 		if (done != ALL_DATA_READ)
 			goto out;
 
@@ -487,7 +487,7 @@ http_badreq_errorcb(struct bufferevent *bev, short what, void *arg)
 }
 
 #ifndef SHUT_WR
-#ifdef _WIN32
+#ifdef WIN32
 #define SHUT_WR SD_SEND
 #else
 #define SHUT_WR 1
@@ -512,11 +512,11 @@ http_badreq_readcb(struct bufferevent *bev, void *arg)
 		enum message_read_status done;
 
 		/* req->kind = EVHTTP_RESPONSE; */
-		done = evhttp_parse_firstline_(req, bufferevent_get_input(bev));
+		done = evhttp_parse_firstline(req, bufferevent_get_input(bev));
 		if (done != ALL_DATA_READ)
 			goto out;
 
-		done = evhttp_parse_headers_(req, bufferevent_get_input(bev));
+		done = evhttp_parse_headers(req, bufferevent_get_input(bev));
 		if (done != ALL_DATA_READ)
 			goto out;
 
@@ -628,10 +628,10 @@ http_large_delay_cb(struct evhttp_request *req, void *arg)
 {
 	struct timeval tv;
 	evutil_timerclear(&tv);
-	tv.tv_usec = 500000;
+	tv.tv_sec = 3;
 
 	event_base_once(arg, -1, EV_TIMEOUT, http_delay_reply, req, &tv);
-	evhttp_connection_fail_(delayed_client, EVCON_HTTP_EOF);
+	evhttp_connection_fail(delayed_client, EVCON_HTTP_EOF);
 }
 
 /*
@@ -823,7 +823,7 @@ static void http_request_done(struct evhttp_request *, void *);
 static void http_request_empty_done(struct evhttp_request *, void *);
 
 static void
-http_connection_test_(struct basic_test_data *data, int persistent)
+_http_connection_test(struct basic_test_data *data, int persistent)
 {
 	ev_uint16_t port = 0;
 	struct evhttp_connection *evcon = NULL;
@@ -906,12 +906,12 @@ http_connection_test_(struct basic_test_data *data, int persistent)
 static void
 http_connection_test(void *arg)
 {
-	http_connection_test_(arg, 0);
+	_http_connection_test(arg, 0);
 }
 static void
 http_persist_connection_test(void *arg)
 {
-	http_connection_test_(arg, 1);
+	_http_connection_test(arg, 1);
 }
 
 static struct regress_dns_server_table search_table[] = {
@@ -1767,7 +1767,7 @@ close_detect_done(struct evhttp_request *req, void *arg)
 
  end:
 	evutil_timerclear(&tv);
-	tv.tv_usec = 150000;
+	tv.tv_sec = 3;
 	event_base_loopexit(arg, &tv);
 }
 
@@ -1801,10 +1801,9 @@ close_detect_cb(struct evhttp_request *req, void *arg)
 	}
 
 	evutil_timerclear(&tv);
-	tv.tv_sec = 0;   /* longer than the http time out */
-	tv.tv_usec = 600000;   /* longer than the http time out */
+	tv.tv_sec = 3;   /* longer than the http time out */
 
-	/* launch a new request on the persistent connection in .3 seconds */
+	/* launch a new request on the persistent connection in 3 seconds */
 	event_base_once(base, -1, EV_TIMEOUT, close_detect_launch, evcon, &tv);
  end:
 	;
@@ -1812,24 +1811,20 @@ close_detect_cb(struct evhttp_request *req, void *arg)
 
 
 static void
-http_close_detection_(struct basic_test_data *data, int with_delay)
+_http_close_detection(struct basic_test_data *data, int with_delay)
 {
 	ev_uint16_t port = 0;
 	struct evhttp_connection *evcon = NULL;
 	struct evhttp_request *req = NULL;
-	const struct timeval sec_tenth = { 0, 100000 };
 
 	test_ok = 0;
 	http = http_setup(&port, data->base);
 
-	/* .1 second timeout */
-	evhttp_set_timeout_tv(http, &sec_tenth);
+	/* 2 second timeout */
+	evhttp_set_timeout(http, 1);
 
 	evcon = evhttp_connection_base_new(data->base, NULL,
 	    "127.0.0.1", port);
-	evhttp_connection_set_timeout_tv(evcon, &sec_tenth);
-
-
 	tt_assert(evcon);
 	delayed_client = evcon;
 
@@ -1863,12 +1858,12 @@ http_close_detection_(struct basic_test_data *data, int with_delay)
 static void
 http_close_detection_test(void *arg)
 {
-	http_close_detection_(arg, 0);
+	_http_close_detection(arg, 0);
 }
 static void
 http_close_detection_delay_test(void *arg)
 {
-	http_close_detection_(arg, 1);
+	_http_close_detection(arg, 1);
 }
 
 static void
@@ -2556,7 +2551,7 @@ http_incomplete_writecb(struct bufferevent *bev, void *arg)
 }
 
 static void
-http_incomplete_test_(struct basic_test_data *data, int use_timeout)
+_http_incomplete_test(struct basic_test_data *data, int use_timeout)
 {
 	struct bufferevent *bev;
 	evutil_socket_t fd;
@@ -2613,12 +2608,12 @@ http_incomplete_test_(struct basic_test_data *data, int use_timeout)
 static void
 http_incomplete_test(void *arg)
 {
-	http_incomplete_test_(arg, 0);
+	_http_incomplete_test(arg, 0);
 }
 static void
 http_incomplete_timeout_test(void *arg)
 {
-	http_incomplete_test_(arg, 1);
+	_http_incomplete_test(arg, 1);
 }
 
 /*
@@ -2645,11 +2640,11 @@ http_chunked_errorcb(struct bufferevent *bev, short what, void *arg)
 		enum message_read_status done;
 
 		/* req->kind = EVHTTP_RESPONSE; */
-		done = evhttp_parse_firstline_(req, bufferevent_get_input(bev));
+		done = evhttp_parse_firstline(req, bufferevent_get_input(bev));
 		if (done != ALL_DATA_READ)
 			goto out;
 
-		done = evhttp_parse_headers_(req, bufferevent_get_input(bev));
+		done = evhttp_parse_headers(req, bufferevent_get_input(bev));
 		if (done != ALL_DATA_READ)
 			goto out;
 
@@ -2913,7 +2908,7 @@ http_stream_in_done(struct evhttp_request *req, void *arg)
  * Makes a request and reads the response in chunks.
  */
 static void
-http_stream_in_test_(struct basic_test_data *data, char const *url,
+_http_stream_in_test(struct basic_test_data *data, char const *url,
     size_t expected_len, char const *expected)
 {
 	struct evhttp_connection *evcon;
@@ -2961,10 +2956,10 @@ http_stream_in_test_(struct basic_test_data *data, char const *url,
 static void
 http_stream_in_test(void *arg)
 {
-	http_stream_in_test_(arg, "/chunked", 13 + 18 + 8,
+	_http_stream_in_test(arg, "/chunked", 13 + 18 + 8,
 	    "This is funnybut not hilarious.bwv 1052");
 
-	http_stream_in_test_(arg, "/test", strlen(BASIC_REQUEST_BODY),
+	_http_stream_in_test(arg, "/test", strlen(BASIC_REQUEST_BODY),
 	    BASIC_REQUEST_BODY);
 }
 
@@ -3018,16 +3013,21 @@ http_stream_in_cancel_test(void *arg)
 static void
 http_connection_fail_done(struct evhttp_request *req, void *arg)
 {
+       struct evhttp_connection *evcon = arg;
+       struct event_base *base = evhttp_connection_get_base(evcon);
+
        /* An ENETUNREACH error results in an unrecoverable
-        * evhttp_connection error (see evhttp_connection_fail_()).  The
+        * evhttp_connection error (see evhttp_connection_fail()).  The
         * connection will be reset, and the user will be notified with a NULL
         * req parameter. */
        tt_assert(!req);
 
+       evhttp_connection_free(evcon);
+
        test_ok = 1;
 
  end:
-       event_base_loopexit(arg, NULL);
+       event_base_loopexit(base, NULL);
 }
 
 /* Test unrecoverable evhttp_connection errors by generating an ENETUNREACH
@@ -3058,7 +3058,7 @@ http_connection_fail_test(void *arg)
         * server using our make request method.
         */
 
-       req = evhttp_request_new(http_connection_fail_done, data->base);
+       req = evhttp_request_new(http_connection_fail_done, evcon);
        tt_assert(req);
 
        if (evhttp_make_request(evcon, req, EVHTTP_REQ_GET, "/") == -1) {
@@ -3070,8 +3070,7 @@ http_connection_fail_test(void *arg)
        tt_int_op(test_ok, ==, 1);
 
  end:
-       if (evcon)
-               evhttp_connection_free(evcon);
+        ;
 }
 
 static void
@@ -3151,12 +3150,7 @@ http_connection_retry_test(void *arg)
 	 */
 	test_ok = 0;
 
-	{
-		const struct timeval tv_timeout = { 0, 500000 };
-		const struct timeval tv_retry = { 0, 500000 };
-		evhttp_connection_set_timeout_tv(evcon, &tv_timeout);
-		evhttp_connection_set_initial_retry_tv(evcon, &tv_retry);
-	}
+	evhttp_connection_set_timeout(evcon, 1);
 	evhttp_connection_set_retries(evcon, 1);
 
 	req = evhttp_request_new(http_connection_retry_done, data->base);
@@ -3173,9 +3167,9 @@ http_connection_retry_test(void *arg)
 	evutil_gettimeofday(&tv_start, NULL);
 	event_base_dispatch(data->base);
 	evutil_gettimeofday(&tv_end, NULL);
-
-	/* fails fast, .5 sec to wait to retry, fails fast again. */
-	test_timeval_diff_leq(&tv_start, &tv_end, 500, 200);
+	evutil_timersub(&tv_end, &tv_start, &tv_end);
+	tt_int_op(tv_end.tv_sec, >, 1);
+	tt_int_op(tv_end.tv_sec, <, 6);
 
 	tt_assert(test_ok == 1);
 
@@ -3199,19 +3193,22 @@ http_connection_retry_test(void *arg)
 		tt_abort_msg("Couldn't make request");
 	}
 
-	/* start up a web server .2 seconds after the connection tried
+	/* start up a web server one second after the connection tried
 	 * to send a request
 	 */
 	evutil_timerclear(&tv);
-	tv.tv_usec = 200000;
+	tv.tv_sec = 1;
 	http_make_web_server_base = data->base;
 	event_base_once(data->base, -1, EV_TIMEOUT, http_make_web_server, &port, &tv);
 
 	evutil_gettimeofday(&tv_start, NULL);
 	event_base_dispatch(data->base);
 	evutil_gettimeofday(&tv_end, NULL);
-	/* We'll wait twice as long as we did last time. */
-	test_timeval_diff_leq(&tv_start, &tv_end, 1000, 400);
+
+	evutil_timersub(&tv_end, &tv_start, &tv_end);
+
+	tt_int_op(tv_end.tv_sec, >, 1);
+	tt_int_op(tv_end.tv_sec, <, 6);
 
 	tt_int_op(test_ok, ==, 1);
 

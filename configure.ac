@@ -1,3 +1,4 @@
+dnl configure.in for libevent
 dnl Copyright 2000-2007 Niels Provos
 dnl Copyright 2007-2012 Niels Provos and Nick Mathewson
 dnl
@@ -5,49 +6,44 @@ dnl See LICENSE for copying information.
 dnl
 dnl Original version Dug Song <dugsong@monkey.org>
 
-AC_INIT(libevent,2.1.1-alpha-dev)
 AC_PREREQ(2.59)
-AC_CONFIG_SRCDIR(event.c)
+AC_INIT(event.c)
 
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE
-dnl AM_SILENT_RULES req. automake 1.11.  [no] defaults V=1
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-AM_CONFIG_HEADER(config.h  evconfig-private.h:evconfig-private.h.in)
-AC_DEFINE(NUMERIC_VERSION, 0x02010101, [Numeric representation of the version])
+
+AM_INIT_AUTOMAKE(libevent,2.0.22-stable)
+AC_CONFIG_HEADERS(config.h)
+AC_DEFINE(NUMERIC_VERSION, 0x02001600, [Numeric representation of the version])
 
 dnl Initialize prefix.
 if test "$prefix" = "NONE"; then
    prefix="/usr/local"
 fi
 
-dnl Try and get a full POSIX environment on obscure systems
-ifdef([AC_USE_SYSTEM_EXTENSIONS], [
-AC_USE_SYSTEM_EXTENSIONS
-], [
-AC_AIX
-AC_GNU_SOURCE
-AC_MINIX
-])
-
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 dnl the 'build' machine is where we run configure and compile
 dnl the 'host' machine is where the resulting stuff runs.
 
-#case "$host_os" in
-#
-# osf5*)
-#    CFLAGS="$CFLAGS -D_OSF_SOURCE"
-#    ;;
-#esac
+case "$host_os" in
+
+ osf5*)
+    CFLAGS="$CFLAGS -D_OSF_SOURCE"
+    ;;
+esac
 
 dnl Checks for programs.
+AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_SED
 AC_PROG_INSTALL
 AC_PROG_LN_S
 # AC_PROG_MKDIR_P - $(MKDIR_P) should be defined by AM_INIT_AUTOMAKE
+
+# AC_PROG_SED is only available in Autoconf >= 2.59b; workaround for older
+# versions
+ifdef([AC_PROG_SED], [AC_PROG_SED], [
+AC_CHECK_PROGS(SED, [gsed sed])
+])
 
 AC_PROG_GCC_TRADITIONAL
 
@@ -78,16 +74,7 @@ case "$host_os" in
 esac
 
 AC_ARG_ENABLE(gcc-warnings,
-     AS_HELP_STRING(--disable-gcc-warnings, disable verbose warnings with GCC))
-
-AC_ARG_ENABLE(gcc-hardening,
-     AS_HELP_STRING(--enable-gcc-hardening, enable compiler security checks),
-[if test x$enableval = xyes; then
-    CFLAGS="$CFLAGS -D_FORTIFY_SOURCE=2 -fstack-protector-all"
-    CFLAGS="$CFLAGS -fwrapv -fPIE -Wstack-protector"
-    CFLAGS="$CFLAGS --param ssp-buffer-size=1"
-fi])
-
+     AS_HELP_STRING(--enable-gcc-warnings, enable verbose warnings with GCC))
 AC_ARG_ENABLE(thread-support,
      AS_HELP_STRING(--disable-thread-support, disable support for threading),
 	[], [enable_thread_support=yes])
@@ -109,9 +96,6 @@ AC_ARG_ENABLE([libevent-regress],
 AC_ARG_ENABLE([function-sections],
      AS_HELP_STRING([--enable-function-sections, make static library allow smaller binaries with --gc-sections]),
 	[], [enable_function_sections=no])
-AC_ARG_ENABLE([verbose-debug],
-		AS_HELP_STRING([--enable-verbose-debug, verbose debug logging]),
-	[], [enable_verbose_debug=no])
 
 
 AC_PROG_LIBTOOL
@@ -131,12 +115,12 @@ AC_SEARCH_LIBS([inet_aton], [resolv])
 AC_SEARCH_LIBS([clock_gettime], [rt])
 AC_SEARCH_LIBS([sendfile], [sendfile])
 
-dnl - check if the macro _WIN32 is defined on this compiler.
-dnl - (this is how we check for a windows compiler)
+dnl - check if the macro WIN32 is defined on this compiler.
+dnl - (this is how we check for a windows version of GCC)
 AC_MSG_CHECKING(for WIN32)
 AC_TRY_COMPILE(,
 	[
-#ifndef _WIN32
+#ifndef WIN32
 die horribly
 #endif
 	],
@@ -187,43 +171,27 @@ AC_SUBST(EV_LIB_WS32)
 AC_SUBST(EV_LIB_GDI)
 AC_SUBST(OPENSSL_LIBADD)
 
-AC_SYS_LARGEFILE
+AC_CHECK_HEADERS([openssl/bio.h])
 
-LIBEVENT_OPENSSL
+if test "$enable_openssl" = "yes"; then
+save_LIBS="$LIBS"
+LIBS=""
+OPENSSL_LIBS=""
+have_openssl=no
+AC_SEARCH_LIBS([SSL_new], [ssl],
+	[have_openssl=yes
+	OPENSSL_LIBS="$LIBS -lcrypto $EV_LIB_GDI $EV_LIB_WS32 $OPENSSL_LIBADD"
+	AC_DEFINE(HAVE_OPENSSL, 1, [Define if the system has openssl])],
+	[have_openssl=no],
+	[-lcrypto $EV_LIB_GDI $EV_LIB_WS32 $OPENSSL_LIBADD])
+LIBS="$save_LIBS"
+AC_SUBST(OPENSSL_LIBS)
+fi
 
 dnl Checks for header files.
-AC_CHECK_HEADERS([ \
-  arpa/inet.h \
-  fcntl.h \
-  ifaddrs.h \
-  mach/mach_time.h \
-  netdb.h \
-  netinet/in.h \
-  netinet/in6.h \
-  netinet/tcp.h \
-  poll.h \
-  port.h \
-  stdarg.h \
-  stddef.h \
-  sys/devpoll.h \
-  sys/epoll.h \
-  sys/event.h \
-  sys/eventfd.h \
-  sys/ioctl.h \
-  sys/mman.h \
-  sys/param.h \
-  sys/queue.h \
-  sys/resource.h \
-  sys/select.h \
-  sys/sendfile.h \
-  sys/socket.h \
-  sys/stat.h \
-  sys/time.h \
-  sys/timerfd.h \
-  sys/uio.h \
-  sys/wait.h \
-])
-
+AC_HEADER_STDC
+AC_CHECK_HEADERS([fcntl.h stdarg.h inttypes.h stdint.h stddef.h poll.h unistd.h sys/epoll.h sys/time.h sys/queue.h sys/event.h sys/param.h sys/ioctl.h sys/select.h sys/devpoll.h port.h netinet/in.h netinet/in6.h sys/socket.h sys/uio.h arpa/inet.h sys/eventfd.h sys/mman.h sys/sendfile.h sys/wait.h netdb.h])
+AC_CHECK_HEADERS([sys/stat.h])
 AC_CHECK_HEADERS(sys/sysctl.h, [], [], [
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -321,47 +289,9 @@ AC_C_INLINE
 AC_HEADER_TIME
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS([ \
-  accept4 \
-  arc4random \
-  arc4random_buf \
-  clock_gettime \
-  eventfd \
-  epoll_create1 \
-  fcntl \
-  getegid \
-  geteuid \
-  getifaddrs \
-  getnameinfo \
-  getprotobynumber \
-  gettimeofday \
-  inet_aton \
-  inet_ntop \
-  inet_pton \
-  issetugid \
-  mach_absolute_time \
-  mmap \
-  nanosleep \
-  pipe \
-  pipe2 \
-  putenv \
-  sendfile \
-  setenv \
-  setrlimit \
-  sigaction \
-  signal \
-  splice \
-  strlcpy \
-  strsep \
-  strtok_r \
-  strtoll \
-  sysctl \
-  timerfd_create \
-  umask \
-  unsetenv \
-  usleep \
-  vasprintf \
-])
+AC_CHECK_FUNCS([gettimeofday vasprintf fcntl clock_gettime strtok_r strsep])
+AC_CHECK_FUNCS([getnameinfo strlcpy inet_ntop inet_pton signal sigaction strtoll inet_aton pipe eventfd sendfile mmap splice arc4random arc4random_buf issetugid geteuid getegid getprotobynumber setenv unsetenv putenv sysctl])
+AC_CHECK_FUNCS([umask])
 
 AC_CACHE_CHECK(
     [for getaddrinfo],
@@ -443,6 +373,8 @@ AC_CHECK_FUNC(gethostbyname_r, [
 ])
 
 fi
+
+AC_CHECK_SIZEOF(long)
 
 AC_MSG_CHECKING(for F_SETFD in fcntl.h)
 AC_EGREP_CPP(yes,
@@ -643,7 +575,7 @@ AC_CHECK_TYPES([struct in6_addr, struct sockaddr_in6, sa_family_t, struct addrin
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
-#ifdef _WIN32
+#ifdef WIN32
 #define WIN32_WINNT 0x400
 #define _WIN32_WINNT 0x400
 #define WIN32_LEAN_AND_MEAN
@@ -666,7 +598,7 @@ AC_CHECK_MEMBERS([struct in6_addr.s6_addr32, struct in6_addr.s6_addr16, struct s
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef _WIN32
+#ifdef WIN32
 #define WIN32_WINNT 0x400
 #define _WIN32_WINNT 0x400
 #define WIN32_LEAN_AND_MEAN
@@ -739,17 +671,12 @@ if test x$enable_debug_mode = xno; then
         [Define if libevent should build without support for a debug mode])
 fi
 
-# check if we should enable verbose debugging 
-if test x$enable_verbose_debug = xyes; then
-	CFLAGS="$CFLAGS -DUSE_DEBUG"
-fi
-
 # check if we have and should use openssl
 AM_CONDITIONAL(OPENSSL, [test "$enable_openssl" != "no" && test "$have_openssl" = "yes"])
 
 # Add some more warnings which we use in development but not in the
 # released versions.  (Some relevant gcc versions can't handle these.)
-if test x$enable_gcc_warnings != xno && test "$GCC" = "yes"; then
+if test x$enable_gcc_warnings = xyes && test "$GCC" = "yes"; then
 
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [
 #if !defined(__GNUC__) || (__GNUC__ < 4)
@@ -771,11 +698,7 @@ if test x$enable_gcc_warnings != xno && test "$GCC" = "yes"; then
 #error
 #endif])], have_clang=yes, have_clang=no)
 
-  CFLAGS="$CFLAGS -W -Wfloat-equal -Wundef -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wredundant-decls -Wchar-subscripts -Wcomment -Wformat -Wwrite-strings -Wmissing-declarations -Wredundant-decls -Wnested-externs -Wbad-function-cast -Wswitch-enum"
-  if test x$enable_gcc_warnings = xyes; then
-    CFLAGS="$CFLAGS -Werror"
-  fi
-
+  CFLAGS="$CFLAGS -W -Wfloat-equal -Wundef -Wpointer-arith -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Wredundant-decls -Wchar-subscripts -Wcomment -Wformat -Wwrite-strings -Wmissing-declarations -Wredundant-decls -Wnested-externs -Wbad-function-cast -Wswitch-enum -Werror"
   CFLAGS="$CFLAGS -Wno-unused-parameter -Wstrict-aliasing"
 
   if test x$have_gcc4 = xyes ; then
@@ -803,6 +726,15 @@ if test x$enable_gcc_warnings != xno && test "$GCC" = "yes"; then
     # Disable the unused-function warnings, because these trigger
     # for minheap-internal.h related code.
     CFLAGS="$CFLAGS -Wno-unused-function"
+
+    # clang on macosx emits warnigns for each directory specified which
+    # isn't "used" generating a lot of build noise (typically 3 warnings
+    # per file
+    case "$host_os" in
+        darwin*)
+            CFLAGS="$CFLAGS -Qunused-arguments"
+        ;;
+    esac
   fi
 
 ##This will break the world on some 64-bit architectures
@@ -886,4 +818,4 @@ AC_SUBST([LIBEVENT_GC_SECTIONS])
 AM_CONDITIONAL([INSTALL_LIBEVENT], [test "$enable_libevent_install" = "yes"])
 
 AC_CONFIG_FILES( [libevent.pc libevent_openssl.pc libevent_pthreads.pc] )
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile include/Makefile test/Makefile sample/Makefile)

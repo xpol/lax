@@ -24,8 +24,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef EVENT2_BUFFEREVENT_H_INCLUDED_
-#define EVENT2_BUFFEREVENT_H_INCLUDED_
+#ifndef _EVENT2_BUFFEREVENT_H_
+#define _EVENT2_BUFFEREVENT_H_
 
 /**
    @file event2/bufferevent.h
@@ -44,10 +44,10 @@
   with bufferevent_enable() and bufferevent_disable().
 
   When reading is enabled, the bufferevent will try to read from the
-  file descriptor onto its input buffer, and and call the read callback.
+  file descriptor onto its input buffer, and call the read callback.
   When writing is enabled, the bufferevent will try to write data onto its
-  file descriptor when writing is enabled, and call the write callback
-  when the output buffer is sufficiently drained.
+  file descriptor when the output buffer has enough data, and call the write
+  callback when the output buffer is sufficiently drained.
 
   Bufferevents come in several flavors, including:
 
@@ -79,10 +79,10 @@ extern "C" {
 #endif
 
 #include <event2/event-config.h>
-#ifdef EVENT__HAVE_SYS_TYPES_H
+#ifdef _EVENT_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef EVENT__HAVE_SYS_TIME_H
+#ifdef _EVENT_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
@@ -109,7 +109,7 @@ extern "C" {
    @see event2/bufferevent.h
  */
 struct bufferevent
-#ifdef EVENT_IN_DOXYGEN_
+#ifdef _EVENT_IN_DOXYGEN
 {}
 #endif
 ;
@@ -273,18 +273,9 @@ struct event_base *bufferevent_get_base(struct bufferevent *bev);
   */
 int bufferevent_priority_set(struct bufferevent *bufev, int pri);
 
-/**
-   Return the priority of a bufferevent.
-
-   Only supported for socket bufferevents
- */
-int bufferevent_get_priority(struct bufferevent *bufev);
 
 /**
   Deallocate the storage associated with a bufferevent structure.
-
-  If there is pending data to write on the bufferevent, it probably won't be
-  flushed before the bufferevent is freed.
 
   @param bufev the bufferevent structure to be freed.
   */
@@ -308,26 +299,6 @@ void bufferevent_free(struct bufferevent *bufev);
 void bufferevent_setcb(struct bufferevent *bufev,
     bufferevent_data_cb readcb, bufferevent_data_cb writecb,
     bufferevent_event_cb eventcb, void *cbarg);
-
-/**
- Retrieves the callbacks for a bufferevent.
-
- @param bufev the bufferevent to examine.
- @param readcb_ptr if readcb_ptr is nonnull, *readcb_ptr is set to the current
-    read callback for the bufferevent.
- @param writecb_ptr if writecb_ptr is nonnull, *writecb_ptr is set to the
-    current write callback for the bufferevent.
- @param eventcb_ptr if eventcb_ptr is nonnull, *eventcb_ptr is set to the
-    current event callback for the bufferevent.
- @param cbarg_ptr if cbarg_ptr is nonnull, *cbarg_ptr is set to the current
-    callback argument for the bufferevent.
- @see buffervent_setcb()
-*/
-void bufferevent_getcb(struct bufferevent *bufev,
-    bufferevent_data_cb *readcb_ptr,
-    bufferevent_data_cb *writecb_ptr,
-    bufferevent_event_cb *eventcb_ptr,
-    void **cbarg_ptr);
 
 /**
   Changes the file descriptor on which the bufferevent operates.
@@ -754,30 +725,6 @@ int bufferevent_add_to_rate_limit_group(struct bufferevent *bev,
 int bufferevent_remove_from_rate_limit_group(struct bufferevent *bev);
 
 /**
-   Set the size limit for single read operation.
-
-   Set to 0 for a reasonable default.
-
-   Return 0 on success and -1 on failure.
- */
-int bufferevent_set_max_single_read(struct bufferevent *bev, size_t size);
-
-/**
-   Set the size limit for single write operation.
-
-   Set to 0 for a reasonable default.
-
-   Return 0 on success and -1 on failure.
- */
-int bufferevent_set_max_single_write(struct bufferevent *bev, size_t size);
-
-/** Get the current size limit for single read operation. */
-ev_ssize_t bufferevent_get_max_single_read(struct bufferevent *bev);
-
-/** Get the current size limit for single write operation. */
-ev_ssize_t bufferevent_get_max_single_write(struct bufferevent *bev);
-
-/**
    @name Rate limit inspection
 
    Return the current read or write bucket size for a bufferevent.
@@ -871,4 +818,4 @@ bufferevent_rate_limit_group_reset_totals(
 }
 #endif
 
-#endif /* EVENT2_BUFFEREVENT_H_INCLUDED_ */
+#endif /* _EVENT2_BUFFEREVENT_H_ */

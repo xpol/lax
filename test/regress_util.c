@@ -23,9 +23,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "../util-internal.h"
-
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -35,16 +33,16 @@
 
 #include <sys/types.h>
 
-#ifndef _WIN32
+#ifndef WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #endif
-#ifdef EVENT__HAVE_NETINET_IN6_H
+#ifdef _EVENT_HAVE_NETINET_IN6_H
 #include <netinet/in6.h>
 #endif
-#ifdef EVENT__HAVE_SYS_WAIT_H
+#ifdef _EVENT_HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
 #include <signal.h>
@@ -55,10 +53,9 @@
 #include "event2/event.h"
 #include "event2/util.h"
 #include "../ipv6-internal.h"
+#include "../util-internal.h"
 #include "../log-internal.h"
 #include "../strlcpy-internal.h"
-#include "../mm-internal.h"
-#include "../time-internal.h"
 
 #include "regress.h"
 
@@ -248,7 +245,7 @@ regress_sockaddr_port_parse(void *ptr)
 		if (ent->safamily == AF_INET) {
 			struct sockaddr_in sin;
 			memset(&sin, 0, sizeof(sin));
-#ifdef EVENT__HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+#ifdef _EVENT_HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
 			sin.sin_len = sizeof(sin);
 #endif
 			sin.sin_family = AF_INET;
@@ -264,7 +261,7 @@ regress_sockaddr_port_parse(void *ptr)
 		} else {
 			struct sockaddr_in6 sin6;
 			memset(&sin6, 0, sizeof(sin6));
-#ifdef EVENT__HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN
+#ifdef _EVENT_HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN
 			sin6.sin6_len = sizeof(sin6);
 #endif
 			sin6.sin6_family = AF_INET6;
@@ -295,7 +292,7 @@ regress_sockaddr_port_format(void *ptr)
 	r = evutil_parse_sockaddr_port("192.168.1.1:80",
 	    (struct sockaddr*)&ss, &len);
 	tt_int_op(r,==,0);
-	cp = evutil_format_sockaddr_port_(
+	cp = evutil_format_sockaddr_port(
 		(struct sockaddr*)&ss, cbuf, sizeof(cbuf));
 	tt_ptr_op(cp,==,cbuf);
 	tt_str_op(cp,==,"192.168.1.1:80");
@@ -304,13 +301,13 @@ regress_sockaddr_port_format(void *ptr)
 	r = evutil_parse_sockaddr_port("[ff00::8010]:999",
 	    (struct sockaddr*)&ss, &len);
 	tt_int_op(r,==,0);
-	cp = evutil_format_sockaddr_port_(
+	cp = evutil_format_sockaddr_port(
 		(struct sockaddr*)&ss, cbuf, sizeof(cbuf));
 	tt_ptr_op(cp,==,cbuf);
 	tt_str_op(cp,==,"[ff00::8010]:999");
 
 	ss.ss_family=99;
-	cp = evutil_format_sockaddr_port_(
+	cp = evutil_format_sockaddr_port(
 		(struct sockaddr*)&ss, cbuf, sizeof(cbuf));
 	tt_ptr_op(cp,==,cbuf);
 	tt_str_op(cp,==,"<addr with socktype 99>");
@@ -355,7 +352,7 @@ test_evutil_sockaddr_predicates(void *ptr)
 		}
 
 		/* sockaddr_is_loopback */
-		if (ent->is_loopback != evutil_sockaddr_is_loopback_((struct sockaddr*)&ss)) {
+		if (ent->is_loopback != evutil_sockaddr_is_loopback((struct sockaddr*)&ss)) {
 			TT_FAIL(("evutil_sockaddr_loopback(%s) not as expected",
 				ent->parse));
 		}
@@ -462,7 +459,7 @@ fatalfn(int exitcode)
 		exit(exitcode);
 }
 
-#ifndef _WIN32
+#ifndef WIN32
 #define CAN_CHECK_ERR
 static void
 check_error_logging(void (*fn)(void), int wantexitcode,
@@ -502,7 +499,7 @@ static void
 sock_err_fn(void)
 {
 	evutil_socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
-#ifdef _WIN32
+#ifdef WIN32
 	EVUTIL_SET_SOCKET_ERROR(WSAEWOULDBLOCK);
 #else
 	errno = EAGAIN;
@@ -535,22 +532,22 @@ test_evutil_log(void *ptr)
 	 * module didn't enforce the requirement that a fatal callback
 	 * actually exit.  Now, it exits no matter what, so if we wan to
 	 * reinstate these tests, we'll need to fork for each one. */
-	check_error_logging(errx_fn, 2, EVENT_LOG_ERR,
+	check_error_logging(errx_fn, 2, _EVENT_LOG_ERR,
 	    "Fatal error; too many kumquats (5)");
 	RESET();
 #endif
 
 	event_warnx("Far too many %s (%d)", "wombats", 99);
-	LOGEQ(EVENT_LOG_WARN, "Far too many wombats (99)");
+	LOGEQ(_EVENT_LOG_WARN, "Far too many wombats (99)");
 	RESET();
 
 	event_msgx("Connecting lime to coconut");
-	LOGEQ(EVENT_LOG_MSG, "Connecting lime to coconut");
+	LOGEQ(_EVENT_LOG_MSG, "Connecting lime to coconut");
 	RESET();
 
 	event_debug(("A millisecond passed! We should log that!"));
 #ifdef USE_DEBUG
-	LOGEQ(EVENT_LOG_DEBUG, "A millisecond passed! We should log that!");
+	LOGEQ(_EVENT_LOG_DEBUG, "A millisecond passed! We should log that!");
 #else
 	tt_int_op(logsev,==,0);
 	tt_ptr_op(logmsg,==,NULL);
@@ -562,19 +559,19 @@ test_evutil_log(void *ptr)
 	event_warn("Couldn't open %s", "/bad/file");
 	evutil_snprintf(buf, sizeof(buf),
 	    "Couldn't open /bad/file: %s",strerror(ENOENT));
-	LOGEQ(EVENT_LOG_WARN,buf);
+	LOGEQ(_EVENT_LOG_WARN,buf);
 	RESET();
 
 #ifdef CAN_CHECK_ERR
 	evutil_snprintf(buf, sizeof(buf),
 	    "Couldn't open /very/bad/file: %s",strerror(ENOENT));
-	check_error_logging(err_fn, 5, EVENT_LOG_ERR, buf);
+	check_error_logging(err_fn, 5, _EVENT_LOG_ERR, buf);
 	RESET();
 #endif
 
 	/* Try with a socket errno. */
 	fd = socket(AF_INET, SOCK_STREAM, 0);
-#ifdef _WIN32
+#ifdef WIN32
 	evutil_snprintf(buf, sizeof(buf),
 	    "Unhappy socket: %s",
 	    evutil_socket_error_to_string(WSAEWOULDBLOCK));
@@ -585,11 +582,11 @@ test_evutil_log(void *ptr)
 	errno = EAGAIN;
 #endif
 	event_sock_warn(fd, "Unhappy socket");
-	LOGEQ(EVENT_LOG_WARN, buf);
+	LOGEQ(_EVENT_LOG_WARN, buf);
 	RESET();
 
 #ifdef CAN_CHECK_ERR
-	check_error_logging(sock_err_fn, 20, EVENT_LOG_ERR, buf);
+	check_error_logging(sock_err_fn, 20, _EVENT_LOG_ERR, buf);
 	RESET();
 #endif
 
@@ -768,7 +765,7 @@ ai_find_by_protocol(struct evutil_addrinfo *ai, int protocol)
 
 
 int
-test_ai_eq_(const struct evutil_addrinfo *ai, const char *sockaddr_port,
+_test_ai_eq(const struct evutil_addrinfo *ai, const char *sockaddr_port,
     int socktype, int protocol, int line)
 {
 	struct sockaddr_storage ss;
@@ -830,7 +827,6 @@ test_evutil_rand(void *arg)
 	char buf2[32];
 	int counts[256];
 	int i, j, k, n=0;
-	struct evutil_weakrand_state seed = { 12346789U };
 
 	memset(buf2, 0, sizeof(buf2));
 	memset(counts, 0, sizeof(counts));
@@ -838,8 +834,8 @@ test_evutil_rand(void *arg)
 	for (k=0;k<32;++k) {
 		/* Try a few different start and end points; try to catch
 		 * the various misaligned cases of arc4random_buf */
-		int startpoint = evutil_weakrand_(&seed) % 4;
-		int endpoint = 32 - (evutil_weakrand_(&seed) % 4);
+		int startpoint = _evutil_weakrand() % 4;
+		int endpoint = 32 - (_evutil_weakrand() % 4);
 
 		memset(buf2, 0, sizeof(buf2));
 
@@ -870,13 +866,6 @@ test_evutil_rand(void *arg)
 		}
 	}
 
-	evutil_weakrand_seed_(&seed, 0);
-	for (i = 0; i < 10000; ++i) {
-		ev_int32_t r = evutil_weakrand_range_(&seed, 9999);
-		tt_int_op(0, <=, r);
-		tt_int_op(r, <, 9999);
-	}
-
 	/* for (i=0;i<256;++i) { printf("%3d %2d\n", i, counts[i]); } */
 end:
 	;
@@ -887,6 +876,11 @@ test_evutil_getaddrinfo(void *arg)
 {
 	struct evutil_addrinfo *ai = NULL, *a;
 	struct evutil_addrinfo hints;
+
+	struct sockaddr_in6 *sin6;
+	struct sockaddr_in *sin;
+	char buf[128];
+	const char *cp;
 	int r;
 
 	/* Try using it as a pton. */
@@ -989,7 +983,7 @@ test_evutil_getaddrinfo(void *arg)
 	hints.ai_flags = EVUTIL_AI_NUMERICHOST;
 	r = evutil_getaddrinfo("www.google.com", "80", &hints, &ai);
 	tt_int_op(r, ==, EVUTIL_EAI_NONAME);
-	tt_int_op(ai, ==, NULL);
+	tt_ptr_op(ai, ==, NULL);
 
 	/* Try symbolic service names wit AI_NUMERICSERV */
 	memset(&hints, 0, sizeof(hints));
@@ -1012,23 +1006,6 @@ test_evutil_getaddrinfo(void *arg)
 		evutil_freeaddrinfo(ai);
 		ai = NULL;
 	}
-
-end:
-	if (ai)
-		evutil_freeaddrinfo(ai);
-}
-
-static void
-test_evutil_getaddrinfo_live(void *arg)
-{
-	struct evutil_addrinfo *ai = NULL;
-	struct evutil_addrinfo hints;
-
-	struct sockaddr_in6 *sin6;
-	struct sockaddr_in *sin;
-	char buf[128];
-	const char *cp;
-	int r;
 
 	/* Now do some actual lookups. */
 	memset(&hints, 0, sizeof(hints));
@@ -1078,13 +1055,13 @@ end:
 		evutil_freeaddrinfo(ai);
 }
 
-#ifdef _WIN32
+#ifdef WIN32
 static void
 test_evutil_loadsyslib(void *arg)
 {
 	HANDLE h=NULL;
 
-	h = evutil_load_windows_system_library_(TEXT("kernel32.dll"));
+	h = evutil_load_windows_system_library(TEXT("kernel32.dll"));
 	tt_assert(h);
 
 end:
@@ -1093,251 +1070,6 @@ end:
 
 }
 #endif
-
-/** Test mm_malloc(). */
-static void
-test_event_malloc(void *arg)
-{
-	void *p = NULL;
-	(void)arg;
-
-	/* mm_malloc(0) should simply return NULL. */
-#ifndef EVENT__DISABLE_MM_REPLACEMENT
-	errno = 0;
-	p = mm_malloc(0);
-	tt_assert(p == NULL);
-	tt_int_op(errno, ==, 0);
-#endif
-
-	/* Trivial case. */
-	errno = 0;
-	p = mm_malloc(8);
-	tt_assert(p != NULL);
-	tt_int_op(errno, ==, 0);
-	mm_free(p);
-
- end:
-	errno = 0;
-	return;
-}
-
-static void
-test_event_calloc(void *arg)
-{
-	void *p = NULL;
-	(void)arg;
-
-#ifndef EVENT__DISABLE_MM_REPLACEMENT
-	/* mm_calloc() should simply return NULL
-	 * if either argument is zero. */
-	errno = 0;
-	p = mm_calloc(0, 0);
-	tt_assert(p == NULL);
-	tt_int_op(errno, ==, 0);
-	errno = 0;
-	p = mm_calloc(0, 1);
-	tt_assert(p == NULL);
-	tt_int_op(errno, ==, 0);
-	errno = 0;
-	p = mm_calloc(1, 0);
-	tt_assert(p == NULL);
-	tt_int_op(errno, ==, 0);
-#endif
-
-	/* Trivial case. */
-	errno = 0;
-	p = mm_calloc(8, 8);
-	tt_assert(p != NULL);
-	tt_int_op(errno, ==, 0);
-	mm_free(p);
-	p = NULL;
-
-	/* mm_calloc() should set errno = ENOMEM and return NULL
-	 * in case of potential overflow. */
-	errno = 0;
-	p = mm_calloc(EV_SIZE_MAX/2, EV_SIZE_MAX/2 + 8);
-	tt_assert(p == NULL);
-	tt_int_op(errno, ==, ENOMEM);
-
- end:
-	errno = 0;
-	if (p)
-		mm_free(p);
-
-	return;
-}
-
-static void
-test_event_strdup(void *arg)
-{
-	void *p = NULL;
-	(void)arg;
-
-#ifndef EVENT__DISABLE_MM_REPLACEMENT
-	/* mm_strdup(NULL) should set errno = EINVAL and return NULL. */
-	errno = 0;
-	p = mm_strdup(NULL);
-	tt_assert(p == NULL);
-	tt_int_op(errno, ==, EINVAL);
-#endif
-
-	/* Trivial cases. */
-
-	errno = 0;
-	p = mm_strdup("");
-	tt_assert(p != NULL);
-	tt_int_op(errno, ==, 0);
-	tt_str_op(p, ==, "");
-	mm_free(p);
-
-	errno = 0;
-	p = mm_strdup("foo");
-	tt_assert(p != NULL);
-	tt_int_op(errno, ==, 0);
-	tt_str_op(p, ==, "foo");
-	mm_free(p);
-
-	/* XXX
-	 * mm_strdup(str) where str is a string of length EV_SIZE_MAX
-	 * should set errno = ENOMEM and return NULL. */
-
- end:
-	errno = 0;
-	return;
-}
-
-static void
-test_evutil_usleep(void *arg)
-{
-	struct timeval tv1, tv2, tv3, diff1, diff2;
-	const struct timeval quarter_sec = {0, 250*1000};
-	const struct timeval tenth_sec = {0, 100*1000};
-	long usec1, usec2;
-
-	evutil_gettimeofday(&tv1, NULL);
-	evutil_usleep_(&quarter_sec);
-	evutil_gettimeofday(&tv2, NULL);
-	evutil_usleep_(&tenth_sec);
-	evutil_gettimeofday(&tv3, NULL);
-
-	evutil_timersub(&tv2, &tv1, &diff1);
-	evutil_timersub(&tv3, &tv2, &diff2);
-	usec1 = diff1.tv_sec * 1000000 + diff1.tv_usec;
-	usec2 = diff2.tv_sec * 1000000 + diff2.tv_usec;
-
-	tt_int_op(usec1, >, 200000);
-	tt_int_op(usec1, <, 300000);
-	tt_int_op(usec2, >,  80000);
-	tt_int_op(usec2, <, 120000);
-
-end:
-	;
-}
-
-static void
-test_evutil_monotonic_res(void *data_)
-{
-	/* Basic santity-test for monotonic timers.  What we'd really like
-	 * to do is make sure that they can't go backwards even when the
-	 * system clock goes backwards. But we haven't got a good way to
-	 * move the system clock backwards.
-	 */
-	struct basic_test_data *data = data_;
-	struct evutil_monotonic_timer timer;
-	const int precise = strstr(data->setup_data, "precise") != NULL;
-	const int fallback = strstr(data->setup_data, "fallback") != NULL;
-	struct timeval tv[10], delay;
-	int total_diff = 0;
-
-	int flags = 0, wantres, acceptdiff, i;
-	if (precise)
-		flags |= EV_MONOT_PRECISE;
-	if (fallback)
-		flags |= EV_MONOT_FALLBACK;
-	if (precise || fallback) {
-#ifdef _WIN32
-		wantres = 10*1000;
-		acceptdiff = 1000;
-#else
-		wantres = 1000;
-		acceptdiff = 300;
-#endif
-	} else {
-		wantres = 40*1000;
-		acceptdiff = 20*1000;
-	}
-
-	TT_BLATHER(("Precise = %d", precise));
-	TT_BLATHER(("Fallback = %d", fallback));
-
-	/* First, make sure we match up with usleep. */
-
-	delay.tv_sec = 0;
-	delay.tv_usec = wantres;
-
-	tt_int_op(evutil_configure_monotonic_time_(&timer, flags), ==, 0);
-
-	for (i = 0; i < 10; ++i) {
-		evutil_gettime_monotonic_(&timer, &tv[i]);
-		evutil_usleep_(&delay);
-	}
-
-	for (i = 0; i < 9; ++i) {
-		struct timeval diff;
-		tt_assert(evutil_timercmp(&tv[i], &tv[i+1], <));
-		evutil_timersub(&tv[i+1], &tv[i], &diff);
-		tt_int_op(diff.tv_sec, ==, 0);
-		total_diff += diff.tv_usec;
-		TT_BLATHER(("Difference = %d", (int)diff.tv_usec));
-	}
-	tt_int_op(abs(total_diff/9 - wantres), <, acceptdiff);
-
-end:
-	;
-}
-
-static void
-test_evutil_monotonic_prc(void *data_)
-{
-	struct basic_test_data *data = data_;
-	struct evutil_monotonic_timer timer;
-	const int precise = strstr(data->setup_data, "precise") != NULL;
-	const int fallback = strstr(data->setup_data, "fallback") != NULL;
-	struct timeval tv[10];
-	int total_diff = 0;
-	int i, maxstep = 25*1000,flags=0;
-	if (precise)
-		maxstep = 500;
-	if (precise)
-		flags |= EV_MONOT_PRECISE;
-	if (fallback)
-		flags |= EV_MONOT_FALLBACK;
-	tt_int_op(evutil_configure_monotonic_time_(&timer, flags), ==, 0);
-
-	/* find out what precision we actually see. */
-
-	evutil_gettime_monotonic_(&timer, &tv[0]);
-	for (i = 1; i < 10; ++i) {
-		do {
-			evutil_gettime_monotonic_(&timer, &tv[i]);
-		} while (evutil_timercmp(&tv[i-1], &tv[i], ==));
-	}
-
-	total_diff = 0;
-	for (i = 0; i < 9; ++i) {
-		struct timeval diff;
-		tt_assert(evutil_timercmp(&tv[i], &tv[i+1], <));
-		evutil_timersub(&tv[i+1], &tv[i], &diff);
-		tt_int_op(diff.tv_sec, ==, 0);
-		total_diff += diff.tv_usec;
-		TT_BLATHER(("Step difference = %d", (int)diff.tv_usec));
-	}
-	TT_BLATHER(("Average step difference = %d", total_diff / 9));
-	tt_int_op(total_diff/9, <, maxstep);
-
-end:
-	;
-}
 
 struct testcase_t util_testcases[] = {
 	{ "ipv4_parse", regress_ipv4_parse, 0, NULL, NULL },
@@ -1354,20 +1086,9 @@ struct testcase_t util_testcases[] = {
 	{ "integers", test_evutil_integers, 0, NULL, NULL },
 	{ "rand", test_evutil_rand, TT_FORK, NULL, NULL },
 	{ "getaddrinfo", test_evutil_getaddrinfo, TT_FORK, NULL, NULL },
-	{ "getaddrinfo_live", test_evutil_getaddrinfo_live, TT_FORK|TT_OFF_BY_DEFAULT, NULL, NULL },
-#ifdef _WIN32
+#ifdef WIN32
 	{ "loadsyslib", test_evutil_loadsyslib, TT_FORK, NULL, NULL },
 #endif
-	{ "mm_malloc", test_event_malloc, 0, NULL, NULL },
-	{ "mm_calloc", test_event_calloc, 0, NULL, NULL },
-	{ "mm_strdup", test_event_strdup, 0, NULL, NULL },
-	{ "usleep", test_evutil_usleep, 0, NULL, NULL },
-	{ "monotonic_res", test_evutil_monotonic_res, 0, &basic_setup, (void*)"" },
-	{ "monotonic_res_precise", test_evutil_monotonic_res, TT_OFF_BY_DEFAULT, &basic_setup, (void*)"precise" },
-	{ "monotonic_res_fallback", test_evutil_monotonic_res, TT_OFF_BY_DEFAULT, &basic_setup, (void*)"fallback" },
-	{ "monotonic_prc", test_evutil_monotonic_prc, 0, &basic_setup, (void*)"" },
-	{ "monotonic_prc_precise", test_evutil_monotonic_prc, 0, &basic_setup, (void*)"precise" },
-	{ "monotonic_prc_fallback", test_evutil_monotonic_prc, 0, &basic_setup, (void*)"fallback" },
 	END_OF_TESTCASES,
 };
 

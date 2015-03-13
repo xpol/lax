@@ -71,17 +71,16 @@ use and development: http://archives.seul.org/libevent/users/
 The following people have helped with suggestions, ideas, code or
 fixing bugs:
 
-  Samy Al Bahra
-  Jacob Appelbaum
   Arno Bakker
+  Alejo
   Weston Andros Adamson
   William Ahern
   Ivan Andropov
   Sergey Avseyev
   Avi Bab
-  Joachim Bauch
   Gilad Benjamini
   Stas Bekman
+  Joachim Bauch
   Denis Bilenko
   Julien Blache
   Kevin Bowling
@@ -92,15 +91,18 @@ fixing bugs:
   Lawnstein Chan
   Shuo Chen
   Ka-Hing Cheung
+  Andrew Cox
+  George Danchev
   Andrew Danforth
+  Antony Dovgal
   Ed Day
   Christopher Davis
   Mike Davis
   Mihai Draghicioiu
-  Alexander Drozdov
   Mark Ellzey
   Shie Erlich
   Leonid Evdokimov
+  Juan Pablo Fernandez
   Christophe Fillot
   Mike Frysinger
   Remi Gacogne
@@ -110,11 +112,10 @@ fixing bugs:
   Dave Hart
   Greg Hazel
   Michael Herf
-  Sebastian Hahn
   Savg He
   Mark Heily
-  Michael Herf
   Greg Hewgill
+  Andrew Hochhaus
   Aaron Hopkins
   Tani Hosokawa
   Jamie Iles
@@ -130,26 +131,23 @@ fixing bugs:
   Scott Lamb
   Christopher Layne
   Adam Langley
-  Graham Leggett
   Philip Lewis
   Zhou Li
   David Libenzi
   Yan Lin
   Moshe Litvin
+  Simon Liu
   Mitchell Livingston
   Hagne Mahre
   Lubomir Marinov
   Abilio Marques
-  Abel Mathew
   Nick Mathewson
   James Mansion
   Nicholas Marriott
   Andrey Matveev
   Caitlin Mercer
   Dagobert Michelsen
-  Andrea Montefusco
   Mansour Moufid
-  Mina Naguib
   Felix Nawothnig
   Trond Norbye
   Linus Nordberg
@@ -159,9 +157,9 @@ fixing bugs:
   Dave Pacheco
   Tassilo von Parseval
   Catalin Patulea
+  Patrick Pelletier
   Simon Perreault
   Pierre Phaneuf
-  Amarin Phaosawasdi
   Ryan Phillips
   Dimitre Piskyulev
   Pavel Plesov
@@ -177,7 +175,6 @@ fixing bugs:
   Ralf Schmitt
   Mike Smellie
   Kevin Springborn
-  Nir Soffer
   Harlan Stenn
   Steve Snyder
   Dug Song
@@ -192,7 +189,6 @@ fixing bugs:
   Colin Watt
   Zack Weinberg
   Jardel Weyrich
-  Alejo
   Alex
   Taral
   propanbutan

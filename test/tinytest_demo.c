@@ -35,15 +35,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <time.h>
-#ifndef _WIN32
-#include <unistd.h>
-#endif
 
 /* ============================================================ */
 
 /* First, let's see if strcmp is working.  (All your test cases should be
- * functions declared to take a single void * as an argument.) */
+ * functions declared to take a single void * as) an argument. */
 void
 test_strcmp(void *data)
 {
@@ -166,27 +162,6 @@ test_memcpy(void *ptr)
 		free(mem);
 }
 
-void
-test_timeout(void *ptr)
-{
-	time_t t1, t2;
-	(void)ptr;
-	t1 = time(NULL);
-#ifdef _WIN32
-	Sleep(5000);
-#else
-	sleep(5);
-#endif
-	t2 = time(NULL);
-
-	tt_int_op(t2-t1, >=, 4);
-
-	tt_int_op(t2-t1, <=, 6);
-
- end:
-	;
-}
-
 /* ============================================================ */
 
 /* Now we need to make sure that our tests get invoked.	  First, you take
@@ -203,10 +178,6 @@ struct testcase_t demo_tests[] = {
 	   its environment. */
 	{ "memcpy", test_memcpy, TT_FORK, &data_buffer_setup },
 
-	/* This flag is off-by-default, since it takes a while to run.	You
-	 * can enable it manually by passing +demo/timeout at the command line.*/
-	{ "timeout", test_timeout, TT_OFF_BY_DEFAULT },
-
 	/* The array has to end with END_OF_TESTCASES. */
 	END_OF_TESTCASES
 };
@@ -219,18 +190,6 @@ struct testgroup_t groups[] = {
 	{ "demo/", demo_tests },
 
 	END_OF_GROUPS
-};
-
-/* We can also define test aliases. These can be used for types of tests that
- * cut across groups. */
-const char *alltests[] = { "+..", NULL };
-const char *slowtests[] = { "+demo/timeout", NULL };
-struct testlist_alias_t aliases[] = {
-
-	{ "ALL", alltests },
-	{ "SLOW", slowtests },
-
-	END_OF_ALIASES
 };
 
 
@@ -252,6 +211,5 @@ main(int c, const char **v)
 	   "tinytest-demo" and "tinytest-demo .." mean the same thing.
 
 	*/
-	tinytest_set_aliases(aliases);
 	return tinytest_main(c, v, groups);
 }

@@ -27,7 +27,7 @@
 /* The old tests here need assertions to work. */
 #undef NDEBUG
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
 #endif
@@ -35,7 +35,7 @@
 #include "event2/event-config.h"
 
 #include <sys/types.h>
-#ifndef _WIN32
+#ifndef WIN32
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -276,7 +276,8 @@ test_bufferevent_zlib(void *arg)
 	struct bufferevent *bev1=NULL, *bev2=NULL;
 	char buffer[8333];
 	z_stream z_input, z_output;
-	int i, pair[2]={-1,-1}, r;
+	int i, r;
+	evutil_socket_t pair[2] = {-1, -1};
 	(void)arg;
 
 	infilter_calls = outfilter_calls = readcb_finished = writecb_finished

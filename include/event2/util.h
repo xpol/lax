@@ -23,8 +23,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef EVENT2_UTIL_H_INCLUDED_
-#define EVENT2_UTIL_H_INCLUDED_
+#ifndef _EVENT2_UTIL_H_
+#define _EVENT2_UTIL_H_
 
 /** @file event2/util.h
 
@@ -38,44 +38,40 @@ extern "C" {
 #endif
 
 #include <event2/event-config.h>
-#ifdef EVENT__HAVE_SYS_TIME_H
+#ifdef _EVENT_HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef EVENT__HAVE_STDINT_H
+#ifdef _EVENT_HAVE_STDINT_H
 #include <stdint.h>
-#elif defined(EVENT__HAVE_INTTYPES_H)
+#elif defined(_EVENT_HAVE_INTTYPES_H)
 #include <inttypes.h>
 #endif
-#ifdef EVENT__HAVE_SYS_TYPES_H
+#ifdef _EVENT_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef EVENT__HAVE_STDDEF_H
+#ifdef _EVENT_HAVE_STDDEF_H
 #include <stddef.h>
 #endif
 #ifdef _MSC_VER
 #include <BaseTsd.h>
 #endif
 #include <stdarg.h>
-#ifdef EVENT__HAVE_NETDB_H
+#ifdef _EVENT_HAVE_NETDB_H
 #if !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
 #endif
 #include <netdb.h>
 #endif
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
-#ifdef EVENT__HAVE_GETADDRINFO
-/* for EAI_* definitions. */
-#include <ws2tcpip.h>
-#endif
 #else
 #include <sys/socket.h>
 #endif
 
 /* Some openbsd autoconf versions get the name of this macro wrong. */
-#if defined(EVENT__SIZEOF_VOID__) && !defined(EVENT__SIZEOF_VOID_P)
-#define EVENT__SIZEOF_VOID_P EVENT__SIZEOF_VOID__
+#if defined(_EVENT_SIZEOF_VOID__) && !defined(_EVENT_SIZEOF_VOID_P)
+#define _EVENT_SIZEOF_VOID_P _EVENT_SIZEOF_VOID__
 #endif
 
 /**
@@ -107,67 +103,67 @@ extern "C" {
  *
  * @{
  */
-#ifdef EVENT__HAVE_UINT64_T
+#ifdef _EVENT_HAVE_UINT64_T
 #define ev_uint64_t uint64_t
 #define ev_int64_t int64_t
-#elif defined(_WIN32)
+#elif defined(WIN32)
 #define ev_uint64_t unsigned __int64
 #define ev_int64_t signed __int64
-#elif EVENT__SIZEOF_LONG_LONG == 8
+#elif _EVENT_SIZEOF_LONG_LONG == 8
 #define ev_uint64_t unsigned long long
 #define ev_int64_t long long
-#elif EVENT__SIZEOF_LONG == 8
+#elif _EVENT_SIZEOF_LONG == 8
 #define ev_uint64_t unsigned long
 #define ev_int64_t long
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 #define ev_uint64_t ...
 #define ev_int64_t ...
 #else
 #error "No way to define ev_uint64_t"
 #endif
 
-#ifdef EVENT__HAVE_UINT32_T
+#ifdef _EVENT_HAVE_UINT32_T
 #define ev_uint32_t uint32_t
 #define ev_int32_t int32_t
-#elif defined(_WIN32)
+#elif defined(WIN32)
 #define ev_uint32_t unsigned int
 #define ev_int32_t signed int
-#elif EVENT__SIZEOF_LONG == 4
+#elif _EVENT_SIZEOF_LONG == 4
 #define ev_uint32_t unsigned long
 #define ev_int32_t signed long
-#elif EVENT__SIZEOF_INT == 4
+#elif _EVENT_SIZEOF_INT == 4
 #define ev_uint32_t unsigned int
 #define ev_int32_t signed int
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 #define ev_uint32_t ...
 #define ev_int32_t ...
 #else
 #error "No way to define ev_uint32_t"
 #endif
 
-#ifdef EVENT__HAVE_UINT16_T
+#ifdef _EVENT_HAVE_UINT16_T
 #define ev_uint16_t uint16_t
 #define ev_int16_t  int16_t
-#elif defined(_WIN32)
+#elif defined(WIN32)
 #define ev_uint16_t unsigned short
 #define ev_int16_t  signed short
-#elif EVENT__SIZEOF_INT == 2
+#elif _EVENT_SIZEOF_INT == 2
 #define ev_uint16_t unsigned int
 #define ev_int16_t  signed int
-#elif EVENT__SIZEOF_SHORT == 2
+#elif _EVENT_SIZEOF_SHORT == 2
 #define ev_uint16_t unsigned short
 #define ev_int16_t  signed short
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 #define ev_uint16_t ...
 #define ev_int16_t ...
 #else
 #error "No way to define ev_uint16_t"
 #endif
 
-#ifdef EVENT__HAVE_UINT8_T
+#ifdef _EVENT_HAVE_UINT8_T
 #define ev_uint8_t uint8_t
 #define ev_int8_t int8_t
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 #define ev_uint8_t ...
 #define ev_int8_t ...
 #else
@@ -175,43 +171,30 @@ extern "C" {
 #define ev_int8_t signed char
 #endif
 
-#ifdef EVENT__HAVE_UINTPTR_T
+#ifdef _EVENT_HAVE_UINTPTR_T
 #define ev_uintptr_t uintptr_t
 #define ev_intptr_t intptr_t
-#elif EVENT__SIZEOF_VOID_P <= 4
+#elif _EVENT_SIZEOF_VOID_P <= 4
 #define ev_uintptr_t ev_uint32_t
 #define ev_intptr_t ev_int32_t
-#elif EVENT__SIZEOF_VOID_P <= 8
+#elif _EVENT_SIZEOF_VOID_P <= 8
 #define ev_uintptr_t ev_uint64_t
 #define ev_intptr_t ev_int64_t
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 #define ev_uintptr_t ...
 #define ev_intptr_t ...
 #else
 #error "No way to define ev_uintptr_t"
 #endif
 
-#ifdef EVENT__ssize_t
-#define ev_ssize_t EVENT__ssize_t
+#ifdef _EVENT_ssize_t
+#define ev_ssize_t _EVENT_ssize_t
 #else
 #define ev_ssize_t ssize_t
 #endif
 
-/* Note that we define ev_off_t based on the compile-time size of off_t that
- * we used to build Libevent, and not based on the current size of off_t.
- * (For example, we don't define ev_off_t to off_t.).  We do this because
- * some systems let you build your software with different off_t sizes
- * at runtime, and so putting in any dependency on off_t would risk API
- * mismatch.
- */
-#ifdef _WIN32
+#ifdef WIN32
 #define ev_off_t ev_int64_t
-#elif EVENT__SIZEOF_OFF_T == 8
-#define ev_off_t ev_int64_t
-#elif EVENT__SIZEOF_OFF_T == 4
-#define ev_off_t ev_int32_t
-#elif defined(EVENT_IN_DOXYGEN_)
-#define ev_off_t ...
 #else
 #define ev_off_t off_t
 #endif
@@ -251,13 +234,13 @@ extern "C" {
 
    @{
 */
-#if EVENT__SIZEOF_SIZE_T == 8
+#if _EVENT_SIZEOF_SIZE_T == 8
 #define EV_SIZE_MAX EV_UINT64_MAX
 #define EV_SSIZE_MAX EV_INT64_MAX
-#elif EVENT__SIZEOF_SIZE_T == 4
+#elif _EVENT_SIZEOF_SIZE_T == 4
 #define EV_SIZE_MAX EV_UINT32_MAX
 #define EV_SSIZE_MAX EV_INT32_MAX
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 #define EV_SIZE_MAX ...
 #define EV_SSIZE_MAX ...
 #else
@@ -267,16 +250,16 @@ extern "C" {
 #define EV_SSIZE_MIN ((-EV_SSIZE_MAX) - 1)
 /**@}*/
 
-#ifdef _WIN32
+#ifdef WIN32
 #define ev_socklen_t int
-#elif defined(EVENT__socklen_t)
-#define ev_socklen_t EVENT__socklen_t
+#elif defined(_EVENT_socklen_t)
+#define ev_socklen_t _EVENT_socklen_t
 #else
 #define ev_socklen_t socklen_t
 #endif
 
-#ifdef EVENT__HAVE_STRUCT_SOCKADDR_STORAGE___SS_FAMILY
-#if !defined(EVENT__HAVE_STRUCT_SOCKADDR_STORAGE_SS_FAMILY) \
+#ifdef _EVENT_HAVE_STRUCT_SOCKADDR_STORAGE___SS_FAMILY
+#if !defined(_EVENT_HAVE_STRUCT_SOCKADDR_STORAGE_SS_FAMILY) \
  && !defined(ss_family)
 #define ss_family __ss_family
 #endif
@@ -285,7 +268,7 @@ extern "C" {
 /**
  * A type wide enough to hold the output of "socket()" or "accept()".  On
  * Windows, this is an intptr_t; elsewhere, it is an int. */
-#ifdef _WIN32
+#ifdef WIN32
 #define evutil_socket_t intptr_t
 #else
 #define evutil_socket_t int
@@ -340,20 +323,8 @@ int evutil_make_socket_closeonexec(evutil_socket_t sock);
 int evutil_closesocket(evutil_socket_t sock);
 #define EVUTIL_CLOSESOCKET(s) evutil_closesocket(s)
 
-/** Do platform-specific operations, if possible, to make a tcp listener
- *  socket defer accept()s until there is data to read.
- *  
- *  Not all platforms support this.  You don't want to do this for every
- *  listener socket: only the ones that implement a protocol where the
- *  client transmits before the server needs to respond.
- *
- *  @param sock The listening socket to to make deferred
- *  @return 0 on success (whether the operation is supported or not),
- *       -1 on failure
-*/ 
-int evutil_make_tcp_listen_socket_deferred(evutil_socket_t sock);
 
-#ifdef _WIN32
+#ifdef WIN32
 /** Return the most recent socket error.  Not idempotent on all platforms. */
 #define EVUTIL_SOCKET_ERROR() WSAGetLastError()
 /** Replace the most recent socket error with errcode */
@@ -363,7 +334,7 @@ int evutil_make_tcp_listen_socket_deferred(evutil_socket_t sock);
 int evutil_socket_geterror(evutil_socket_t sock);
 /** Convert a socket error to a string. */
 const char *evutil_socket_error_to_string(int errcode);
-#elif defined(EVENT_IN_DOXYGEN_)
+#elif defined(_EVENT_IN_DOXYGEN)
 /**
    @name Socket error functions
 
@@ -404,7 +375,7 @@ const char *evutil_socket_error_to_string(int errcode);
  *
  * @{
  */
-#ifdef EVENT__HAVE_TIMERADD
+#ifdef _EVENT_HAVE_TIMERADD
 #define evutil_timeradd(tvp, uvp, vvp) timeradd((tvp), (uvp), (vvp))
 #define evutil_timersub(tvp, uvp, vvp) timersub((tvp), (uvp), (vvp))
 #else
@@ -426,9 +397,9 @@ const char *evutil_socket_error_to_string(int errcode);
 			(vvp)->tv_usec += 1000000;			\
 		}							\
 	} while (0)
-#endif /* !EVENT__HAVE_TIMERADD */
+#endif /* !_EVENT_HAVE_HAVE_TIMERADD */
 
-#ifdef EVENT__HAVE_TIMERCLEAR
+#ifdef _EVENT_HAVE_TIMERCLEAR
 #define evutil_timerclear(tvp) timerclear(tvp)
 #else
 #define	evutil_timerclear(tvp)	(tvp)->tv_sec = (tvp)->tv_usec = 0
@@ -442,7 +413,7 @@ const char *evutil_socket_error_to_string(int errcode);
 	 ((tvp)->tv_usec cmp (uvp)->tv_usec) :				\
 	 ((tvp)->tv_sec cmp (uvp)->tv_sec))
 
-#ifdef EVENT__HAVE_TIMERISSET
+#ifdef _EVENT_HAVE_TIMERISSET
 #define evutil_timerisset(tvp) timerisset(tvp)
 #else
 #define	evutil_timerisset(tvp)	((tvp)->tv_sec || (tvp)->tv_usec)
@@ -460,7 +431,7 @@ const char *evutil_socket_error_to_string(int errcode);
 ev_int64_t evutil_strtoll(const char *s, char **endptr, int base);
 
 /** Replacement for gettimeofday on platforms that lack it. */
-#ifdef EVENT__HAVE_GETTIMEOFDAY
+#ifdef _EVENT_HAVE_GETTIMEOFDAY
 #define evutil_gettimeofday(tv, tz) gettimeofday((tv), (tz))
 #else
 struct timezone;
@@ -531,7 +502,7 @@ int evutil_ascii_strncasecmp(const char *str1, const char *str2, size_t n);
 
 /* Here we define evutil_addrinfo to the native addrinfo type, or redefine it
  * if this system has no getaddrinfo(). */
-#ifdef EVENT__HAVE_STRUCT_ADDRINFO
+#ifdef _EVENT_HAVE_STRUCT_ADDRINFO
 #define evutil_addrinfo addrinfo
 #else
 /** A definition of struct addrinfo for systems that lack it.
@@ -557,32 +528,32 @@ struct evutil_addrinfo {
 
     @{
 */
-#if defined(EAI_ADDRFAMILY) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_ADDRFAMILY
 #define EVUTIL_EAI_ADDRFAMILY EAI_ADDRFAMILY
 #else
 #define EVUTIL_EAI_ADDRFAMILY -901
 #endif
-#if defined(EAI_AGAIN) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_AGAIN
 #define EVUTIL_EAI_AGAIN EAI_AGAIN
 #else
 #define EVUTIL_EAI_AGAIN -902
 #endif
-#if defined(EAI_BADFLAGS) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_BADFLAGS
 #define EVUTIL_EAI_BADFLAGS EAI_BADFLAGS
 #else
 #define EVUTIL_EAI_BADFLAGS -903
 #endif
-#if defined(EAI_FAIL) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_FAIL
 #define EVUTIL_EAI_FAIL EAI_FAIL
 #else
 #define EVUTIL_EAI_FAIL -904
 #endif
-#if defined(EAI_FAMILY) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_FAMILY
 #define EVUTIL_EAI_FAMILY EAI_FAMILY
 #else
 #define EVUTIL_EAI_FAMILY -905
 #endif
-#if defined(EAI_MEMORY) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_MEMORY
 #define EVUTIL_EAI_MEMORY EAI_MEMORY
 #else
 #define EVUTIL_EAI_MEMORY -906
@@ -590,27 +561,27 @@ struct evutil_addrinfo {
 /* This test is a bit complicated, since some MS SDKs decide to
  * remove NODATA or redefine it to be the same as NONAME, in a
  * fun interpretation of RFC 2553 and RFC 3493. */
-#if defined(EAI_NODATA) && defined(EVENT__HAVE_GETADDRINFO) && (!defined(EAI_NONAME) || EAI_NODATA != EAI_NONAME)
+#if defined(EAI_NODATA) && (!defined(EAI_NONAME) || EAI_NODATA != EAI_NONAME)
 #define EVUTIL_EAI_NODATA EAI_NODATA
 #else
 #define EVUTIL_EAI_NODATA -907
 #endif
-#if defined(EAI_NONAME) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_NONAME
 #define EVUTIL_EAI_NONAME EAI_NONAME
 #else
 #define EVUTIL_EAI_NONAME -908
 #endif
-#if defined(EAI_SERVICE) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_SERVICE
 #define EVUTIL_EAI_SERVICE EAI_SERVICE
 #else
 #define EVUTIL_EAI_SERVICE -909
 #endif
-#if defined(EAI_SOCKTYPE) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_SOCKTYPE
 #define EVUTIL_EAI_SOCKTYPE EAI_SOCKTYPE
 #else
 #define EVUTIL_EAI_SOCKTYPE -910
 #endif
-#if defined(EAI_SYSTEM) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef EAI_SYSTEM
 #define EVUTIL_EAI_SYSTEM EAI_SYSTEM
 #else
 #define EVUTIL_EAI_SYSTEM -911
@@ -618,37 +589,37 @@ struct evutil_addrinfo {
 
 #define EVUTIL_EAI_CANCEL -90001
 
-#if defined(AI_PASSIVE) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_PASSIVE
 #define EVUTIL_AI_PASSIVE AI_PASSIVE
 #else
 #define EVUTIL_AI_PASSIVE 0x1000
 #endif
-#if defined(AI_CANONNAME) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_CANONNAME
 #define EVUTIL_AI_CANONNAME AI_CANONNAME
 #else
 #define EVUTIL_AI_CANONNAME 0x2000
 #endif
-#if defined(AI_NUMERICHOST) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_NUMERICHOST
 #define EVUTIL_AI_NUMERICHOST AI_NUMERICHOST
 #else
 #define EVUTIL_AI_NUMERICHOST 0x4000
 #endif
-#if defined(AI_NUMERICSERV) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_NUMERICSERV
 #define EVUTIL_AI_NUMERICSERV AI_NUMERICSERV
 #else
 #define EVUTIL_AI_NUMERICSERV 0x8000
 #endif
-#if defined(AI_V4MAPPED) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_V4MAPPED
 #define EVUTIL_AI_V4MAPPED AI_V4MAPPED
 #else
 #define EVUTIL_AI_V4MAPPED 0x10000
 #endif
-#if defined(AI_ALL) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_ALL
 #define EVUTIL_AI_ALL AI_ALL
 #else
 #define EVUTIL_AI_ALL 0x20000
 #endif
-#if defined(AI_ADDRCONFIG) && defined(EVENT__HAVE_GETADDRINFO)
+#ifdef AI_ADDRCONFIG
 #define EVUTIL_AI_ADDRCONFIG AI_ADDRCONFIG
 #else
 #define EVUTIL_AI_ADDRCONFIG 0x40000
@@ -677,9 +648,12 @@ const char *evutil_gai_strerror(int err);
 
 /** Generate n bytes of secure pseudorandom data, and store them in buf.
  *
- * By default, Libevent uses an ARC4-based random number generator, seeded
- * using the platform's entropy source (/dev/urandom on Unix-like systems;
- * CryptGenRandom on Windows).
+ * Current versions of Libevent use an ARC4-based random number generator,
+ * seeded using the platform's entropy source (/dev/urandom on Unix-like
+ * systems; CryptGenRandom on Windows).  This is not actually as secure as it
+ * should be: ARC4 is a pretty lousy cipher, and the current implementation
+ * provides only rudimentary prediction- and backtracking-resistance.  Don't
+ * use this for serious cryptographic applications.
  */
 void evutil_secure_rng_get_bytes(void *buf, size_t n);
 
@@ -701,6 +675,21 @@ void evutil_secure_rng_get_bytes(void *buf, size_t n);
  */
 int evutil_secure_rng_init(void);
 
+/**
+ * Set a filename to use in place of /dev/urandom for seeding the secure
+ * PRNG. Return 0 on success, -1 on failure.
+ *
+ * Call this function BEFORE calling any other initialization or RNG
+ * functions.
+ *
+ * (This string will _NOT_ be copied internally. Do not free it while any
+ * user of the secure RNG might be running. Don't pass anything other than a
+ * real /dev/...random device file here, or you might lose security.)
+ *
+ * This API is unstable, and might change in a future libevent version.
+ */
+int evutil_secure_rng_set_urandom_device_file(char *fname);
+
 /** Seed the random number generator with extra random bytes.
 
     You should almost never need to call this function; it should be
@@ -721,4 +710,4 @@ void evutil_secure_rng_add_bytes(const char *dat, size_t datlen);
 }
 #endif
 
-#endif /* EVENT1_EVUTIL_H_INCLUDED_ */
+#endif /* _EVUTIL_H_ */

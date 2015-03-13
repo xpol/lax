@@ -6,9 +6,6 @@
 
  */
 
-/* Compatibility for possible missing IPv6 declarations */
-#include "../util-internal.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -40,14 +37,17 @@
 #include <event2/util.h>
 #include <event2/keyvalq_struct.h>
 
-#ifdef EVENT__HAVE_NETINET_IN_H
+#ifdef _EVENT_HAVE_NETINET_IN_H
 #include <netinet/in.h>
 # ifdef _XOPEN_SOURCE_EXTENDED
 #  include <arpa/inet.h>
 # endif
 #endif
 
-#ifdef _WIN32
+/* Compatibility for possible missing IPv6 declarations */
+#include "../util-internal.h"
+
+#ifdef WIN32
 #define stat _stat
 #define fstat _fstat
 #define open _open
@@ -132,7 +132,7 @@ dump_request_cb(struct evhttp_request *req, void *arg)
 	while (evbuffer_get_length(buf)) {
 		int n;
 		char cbuf[128];
-		n = evbuffer_remove(buf, cbuf, sizeof(buf)-1);
+		n = evbuffer_remove(buf, cbuf, sizeof(cbuf));
 		if (n > 0)
 			(void) fwrite(cbuf, 1, n, stdout);
 	}
@@ -206,7 +206,7 @@ send_document_cb(struct evhttp_request *req, void *arg)
 	if (S_ISDIR(st.st_mode)) {
 		/* If it's a directory, read the comments and make a little
 		 * index page */
-#ifdef _WIN32
+#ifdef WIN32
 		HANDLE d;
 		WIN32_FIND_DATAA ent;
 		char *pattern;
@@ -220,7 +220,7 @@ send_document_cb(struct evhttp_request *req, void *arg)
 		if (!strlen(path) || path[strlen(path)-1] != '/')
 			trailing_slash = "/";
 
-#ifdef _WIN32
+#ifdef WIN32
 		dirlen = strlen(whole_path);
 		pattern = malloc(dirlen+3);
 		memcpy(pattern, whole_path, dirlen);
@@ -247,7 +247,7 @@ send_document_cb(struct evhttp_request *req, void *arg)
 		    uri_root, path, /* XXX html-escape this? */
 		    trailing_slash,
 		    decoded_path /* XXX html-escape this */);
-#ifdef _WIN32
+#ifdef WIN32
 		do {
 			const char *name = ent.cFileName;
 #else
@@ -257,14 +257,14 @@ send_document_cb(struct evhttp_request *req, void *arg)
 			evbuffer_add_printf(evb,
 			    "    <li><a href=\"%s\">%s</a>\n",
 			    name, name);/* XXX escape this */
-#ifdef _WIN32
+#ifdef WIN32
 		} while (FindNextFileA(d, &ent));
 #else
 		}
 #endif
 		evbuffer_add_printf(evb, "</ul></body></html>\n");
-#ifdef _WIN32
-		CloseHandle(d);
+#ifdef WIN32
+		FindClose(d);
 #else
 		closedir(d);
 #endif
@@ -321,7 +321,7 @@ main(int argc, char **argv)
 	struct evhttp_bound_socket *handle;
 
 	unsigned short port = 0;
-#ifdef _WIN32
+#ifdef WIN32
 	WSADATA WSAData;
 	WSAStartup(0x101, &WSAData);
 #else
