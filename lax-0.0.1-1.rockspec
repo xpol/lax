@@ -41,6 +41,28 @@ build = {
           libraries = {'event'}
         }
       }
+    },
+    windows = {
+      modules = {
+        ['lax'] = {
+          sources = {'src/lax.c'},
+          incdirs = {'libevent/include', 'libevent/WIN32-Code'},
+          defines = {'WIN32'},
+          libraries = {'libevent/libevent'}
+        },
+        ['lax.http'] = {
+          sources = {'src/lax_http.c'},
+          incdirs = {'libevent/include', 'libevent/WIN32-Code'},
+          defines = {'WIN32'},
+          libraries = {'libevent/libevent'}
+        },
+        ['lax.net'] = {
+          sources = {'src/lax_net.c'},
+          incdirs = {'libevent/include', 'libevent/WIN32-Code'},
+          defines = {'WIN32'},
+          libraries = {'libevent/libevent'}
+        },
+      }
     }
   }
 }

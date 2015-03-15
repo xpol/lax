@@ -8,6 +8,6 @@ if(WIN32)
 endif()
 
 
-add_library(lax src/lax_http.c src/lax_net.c)
+add_library(lax src/lax.c src/lax_http.c src/lax_net.c)
 
 target_link_libraries(lax)

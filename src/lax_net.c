@@ -2,7 +2,7 @@
 #include <lua.h>
 
 
-LUA_API int luaopen_lax_http(lua_State* L)
+LUA_API int luaopen_lax_net(lua_State* L)
 {
     return 1;
 }
