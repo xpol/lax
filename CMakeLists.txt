@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 2.8)
+
 project (lax)
 
 find_program(LUA_EXECUTABLE NAMES lua)
@@ -13,7 +14,10 @@ if(WIN32)
   include_directories(libevent/WIN32-Code)
 endif()
 
+file(GLOB lax_SRC "src/*.h" "src/*.c")
 
-add_library(lax src/lax.c src/lax_http.c src/lax_net.c)
+add_library(core MODULE ${lax_SRC})
 
-target_link_libraries(lax ${LUA_LIBRARIES})
+target_link_libraries(core ${LUA_LIBRARIES})
+
+install(TARGETS core DESTINATION "${LAX_INSTALL_PREFIX}/lib/lax")

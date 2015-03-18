@@ -3,7 +3,7 @@
 
 
 
-LUA_API int luaopen_lax(lua_State* L)
+LUA_API int luaopen_lax_core(lua_State* L)
 {
     return 1;
 }
